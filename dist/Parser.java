@@ -5,47 +5,73 @@ import java.util.LinkedList;
 
 public class Parser {
 	
-	public void readQuery(Scanner queryScanner, Queue<String> columnsQueue, ArrayList<String> fromColumns, ArrayList<String> whereColumns, ArrayList<String> andColumns) {
+	private int resultNumber;
+	private Queue<String> columnsQueue; // ex: queue - 1:"D.c0", 2:"D.c4", 3:"C.c1"
+	private ArrayList<String> fromColumns; // ex: ["A", "B", "C", "D"]
+	private ArrayList<String> whereColumns; // ex: ["A.c1=B.c0", " A.c3=D.c0", "C.c2=D.c2"]
+	private ArrayList<String> andColumns; // ex: "[D.c3=-9496]"
+
+	public Parser() {
+		resultNumber = 0;
+	}
+
+	public Queue<String> getColumnsQueue() {
+		return this.columnsQueue;
+	}
+
+	public ArrayList<String> getFromColumns() {
+		return this.fromColumns;
+	}
+
+	public ArrayList<String> getWhereColumns() {
+		return this.whereColumns;
+	}
+
+	public ArrayList<String> getAndColumns() {
+		return this.andColumns;
+	}
+
+	public void readQuery(Scanner queryScanner) {
+
+		columnsQueue = new LinkedList<>(); // ex: queue - 1:"D.c0", 2:"D.c4", 3:"C.c1"
+		fromColumns = new ArrayList<>(); // ex: ["A", "B", "C", "D"]
+		whereColumns = new ArrayList<>(); // ex: ["A.c1=B.c0", " A.c3=D.c0", "C.c2=D.c2"]
+		andColumns = new ArrayList<>(); // ex: "[D.c3=-9496]"
+
 		// Get SELECT line
 		// Figure out which column from which table we are summing (looking for)
-		
 		// Saves the table and column name (in the right order)
 		queryScanner.next();
 		String selectLine = queryScanner.nextLine().replaceAll(" ", "");
-		//System.out.println("selectLine is " + selectLine);
 		String[] selectColumns = selectLine.split(",");
 		for (int i = 0; i < selectColumns.length; i++) {
 			String col = selectColumns[i].trim();
 			columnsQueue.add(col.substring(4, 8)); 
 		}
-		//System.out.println(columnsQueue);
 		
 		// Get FROM line
 		queryScanner.next();
 		String fromLine = queryScanner.nextLine().replaceAll(" ", "");
-		//System.out.println("fromLine is " + fromLine);
-		//fromColumns = new ArrayList<String>(Arrays.asList(fromLine.split(",")));
 		arrayToList(fromLine.split(","), fromColumns);
 		
 		// Get WHERE line
 		queryScanner.next();
 		String whereLine = queryScanner.nextLine().replaceAll(" ", "");
-		//System.out.println("whereLine is " + whereLine);
-		//whereColumns = new ArrayList<String>(Arrays.asList(whereLine.split("AND")));
 		arrayToList(whereLine.split("AND"), whereColumns);
 		
 		
 		// Get AND line
 		queryScanner.next();
 		String andLine = queryScanner.nextLine().replaceAll(" ", "");
-		//System.out.println("andLine is " + andLine);
-		//andColumns = new ArrayList<String>(Arrays.asList(andLine.split(";")));
-		arrayToList(andLine.split(";"), andColumns);
-		//System.out.println("andColumns is " + andColumns);
-		
+		arrayToList(andLine.split(";"), andColumns);		
+	}
+
+	public int getNumOfQueries(Scanner queryScanner) {
+		return 1;
+		// return queryScanner.nextInt();
 	}
 	
-	public static void arrayToList(String[] stringArr, ArrayList<String> stringList) {
+	public void arrayToList(String[] stringArr, ArrayList<String> stringList) {
 		for (String s : stringArr) {
 			stringList.add(s);
 		}
