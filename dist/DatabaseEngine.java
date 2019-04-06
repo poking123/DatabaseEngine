@@ -22,13 +22,17 @@ public class DatabaseEngine {
 		// Loader loads all the data into storage
 		loader.readAllCSVFiles(CSVFiles);
 
+		Catalog catalog = loader.getCatalog();
 		
 		// PARSER
 		Parser parser = new Parser();
 
 		
-
+		// EXECUTION ENGINE
 		ExecutionEngine executionEngine = new ExecutionEngine();
+		// Sets the execution engine's catalog
+		executionEngine.setCatalog(catalog);
+		
 		Scanner queryScanner = new Scanner(System.in);
 
 		// Gets the number of queries
@@ -37,14 +41,14 @@ public class DatabaseEngine {
 		for (int i = 0; i < numOfQueries - 1; i++) {
 			parser.readQuery(queryScanner);
 			queryScanner.nextLine(); // Blank Line
+			
 			// Execute Query
 			executionEngine.executeQuery(parser.getColumnsQueue(), parser.getFromColumns(), parser.getWhereColumns(), parser.getAndColumns());
 		}
 		// Last Query
 		parser.readQuery(queryScanner);
 		
-		
-		Catalog catalog = loader.getCatalog();
+
 		
 		
 		

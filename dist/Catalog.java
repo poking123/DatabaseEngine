@@ -15,7 +15,6 @@ public class Catalog {
         metaDataMap.put(fileName, metadata);
     }
 
-
     public int getMin(String tableName, int column) {
         return metaDataMap.get(tableName).getMin(column);
     }
@@ -28,8 +27,12 @@ public class Catalog {
         return metaDataMap.get(tableName).getUnique(column);
     }
 
-    public int getColumns(String tableName, int column) {
+    public int getColumns(String tableName) {
         return metaDataMap.get(tableName).getColumns();
+    }
+    
+    public String getColumnNames(String tableName) {
+    	return metaDataMap.get(tableName).getColumnNames();
     }
 
 }

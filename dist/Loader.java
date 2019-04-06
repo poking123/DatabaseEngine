@@ -41,6 +41,7 @@ public class Loader {
 		// Gets the first line for the number of columns
 		// And to put values into the metadata arrays
 		String[] firstLine = scanner.nextLine().split(",");
+		scanner.close();
 		int numOfCols = firstLine.length;
 
 		// Arrays for metadata
@@ -59,22 +60,20 @@ public class Loader {
 
 		FileReader fr = new FileReader(path);
 		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName + ".dat")));
-		// Adds in a header to the data
+		
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < numOfCols - 1; i++) {
-			sb.append(tableName + ".c" + i + ",");
-		}
-		sb.append(tableName + ".c" + (numOfCols - 1) + ",");
-		dos.writeChars(sb.toString());
+		
 		
 		CharBuffer cb1 = CharBuffer.allocate(4 * 1024);
 		CharBuffer cb2 = CharBuffer.allocate(4 * 1024);
 
+		// Keeps track of the index
+		// And use this to get the total number of rows
+		int index = 0;
 		// FileReader reads through the CharBuffer
 		while (fr.read(cb1) != -1) {
 			cb1.flip();
 			int lastNumberStart = 0;
-			int index = 0;
 
 			for (int i = 0; i < cb1.length(); i++) {
 				if (cb1.charAt(i) == ',' || cb1.charAt(i) == '\n') {
@@ -85,14 +84,16 @@ public class Loader {
 					sb.setLength(0);
 
 					// Metadata
-					int minValue = minArray[index];
+					int modIndex = index % numOfCols;
+					
+					int minValue = minArray[modIndex];
 					minArray[index] = numRead < minValue ? numRead : minValue;
-					int maxValue = maxArray[index];
+					int maxValue = maxArray[modIndex];
 					maxArray[index] = numRead < maxValue ? numRead : maxValue;
 					
-					uniqueSetArray.get(index).add(numRead);
+					uniqueSetArray.get(modIndex).add(numRead);
 
-					index = (index + 1) % numOfCols;
+					index++;
 				} else {
 					sb.append(cb1.charAt(i));
 				}
@@ -113,31 +114,26 @@ public class Loader {
 		fr.close();
 		dos.close();
 
+		// METADATA
+		
 		// Puts in the number of unique values into an array
 		int[] uniqueArray = new int[numOfCols];
 		for (int i = 0; i < numOfCols; i++) uniqueArray[i] = uniqueSetArray.get(i).size();
 
+		// Makes header with all the column names
+		for (int i = 0; i < numOfCols - 1; i++) {
+			sb.append(tableName + ".c" + i + ",");
+		}
+		sb.append(tableName + ".c" + (numOfCols - 1) + ",");
+		String columnNames = sb.toString();
+		
 		// Adds the meta data to TableMetaData
 		// Then add TableMetaData to the catalog
-		TableMetaData tmd = new TableMetaData(numOfCols);
+		TableMetaData tmd = new TableMetaData(numOfCols, index / numOfCols, columnNames);
 		tmd.setMin(minArray);
 		tmd.setMax(maxArray);
 		tmd.setUnique(uniqueArray);
 		catalog.addData(tableName, tmd);
-
-
-		// Reading Data Example
-		DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream("tmp.dat")));
-
-		try {
-			while (true) {
-				System.out.println(dis.readInt());
-			}
-		} catch (EOFException e) {
-			System.out.println("DONE");
-		}
-		dis.close();
-
 	}
 	
 	// returns the String of CSV files

@@ -1,17 +1,92 @@
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.Scanner;
 
 public class ExecutionEngine {
 	
+	private Catalog catalog;
 	private int resultNumber;
 	
 	public ExecutionEngine() {
 		resultNumber = 0;
+		catalog = new Catalog();
+	}
+	
+	public void setCatalog(Catalog catalog) {
+		this.catalog = catalog;
+	}
+	
+	public void predicateScan(String tableName, ArrayList<int[]> data) throws IOException {
+		// int[] has
+		// index 0 = column
+		// index 1 = comparing value
+		// index 2 = operator
+		// 0 is =, 1 is <, 2 is >
+		
+		// for each predicate, map the column to a PredicateChecker Object
+		HashMap<Integer, PredicateChecker> columnMap = new HashMap<>(); // each column maps to a predicate checker
+		for (int i = 0; i < data.size(); i++) {
+			int column = data.get(i)[0];
+			int compareValue = data.get(i)[1];
+			int operator = data.get(i)[2];
+			
+			if (!columnMap.containsKey(column)) { // first time seeing a predicate on a column
+				PredicateChecker pc = new PredicateChecker();
+				pc.addPredicate(operator, compareValue);
+				columnMap.put(column, pc);
+			} else { // more than 1 predicate on a column
+				columnMap.get(column).addPredicate(operator, compareValue);
+			}
+		}
+		
+		// Gets list of columns we have to check
+		HashSet<Integer> checkColumns = new HashSet<>(columnMap.keySet());
+		
+		// Reading Data Example
+		DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat")));
+		
+		// Get number of columns
+		int numOfCols = catalog.getColumns(tableName);
+		
+		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName + "-short.dat")));
+		
+		try {
+			while (true) {
+				int[] row = new int[numOfCols];
+				for (int i = 0; i < numOfCols; i++)  // add row to our int array
+					row[i] = dis.readInt();
+				
+				// iterates through the check columns and checks the predicate
+				Iterator<Integer> itr = checkColumns.iterator();
+				boolean leaveLoop = false;
+				while (itr.hasNext() && !leaveLoop) {
+					int column = itr.next();
+					if (!columnMap.get(column).checkPredicates(row[column]))
+						leaveLoop = true;
+				}
+				if (leaveLoop == false) { // leaveLoop is false if we checked all the column predicates and they were all true
+					for (int i : row) // writes the row
+						dos.writeInt(i);
+				}
+			}
+		} catch (EOFException e) { // Done reading the file
+			
+		}
+		dis.close();
 	}
 	
 
@@ -47,8 +122,8 @@ public class ExecutionEngine {
                     table1JoinCol = rightTableCol;
                 }
                 
-                String table1 = "result" + resultNumber + ".txt";
-                String table2 = joinTable + ".txt";
+                String table1 = "result" + resultNumber + ".dat";
+                String table2 = joinTable + ".dat";
                 resultNumber++;
                 
                 joinTables(table1, table1JoinCol, table2, joinCol, resultNumber, false);
@@ -87,8 +162,8 @@ public class ExecutionEngine {
                     joinCol = leftTableCol;
                 }
                 
-                String table1 = "result" + resultNumber + ".txt";
-                String table2 = joinTable + ".txt";
+                String table1 = "result" + resultNumber + ".dat";
+                String table2 = joinTable + ".dat";
                 resultNumber++;
                 String colName = left ? tablesArr[0] : tablesArr[1];
                 joinTables(table1, getColumnNumber(table1, colName), table2, joinCol, resultNumber, false);
@@ -111,15 +186,15 @@ public class ExecutionEngine {
             String rightTable = rightTableArr[0];
             int rightTableCol = Integer.parseInt(rightTableArr[1].substring(1));
             
-            String table1 = leftTable + ".txt";
-            String table2 = rightTable + ".txt";
+            String table1 = leftTable + ".dat";
+            String table2 = rightTable + ".dat";
             resultNumber++;
             // Joins the disjoint table
             joinTables(table1, getColumnNumber(table1, tablesArr[0]), table2, getColumnNumber(table2, tablesArr[1]), resultNumber, false);
             
             // Join with the current result
-            table1 = "result" + (resultNumber - 1) + ".txt";
-            table2 = "result" + resultNumber + ".txt";
+            table1 = "result" + (resultNumber - 1) + ".dat";
+            table2 = "result" + resultNumber + ".dat";
             resultNumber++;
             // Joins the disjoint table join with the current result
             joinTables(table1, getColumnNumber(table1, tablesArr[0]), table2, getColumnNumber(table2, tablesArr[1]), resultNumber, true);
@@ -155,13 +230,13 @@ public class ExecutionEngine {
 		int column = Integer.parseInt(leftSide[1]);
 		
 		// Reads the AND table and filters by the predicate
-		Scanner andTableScanner = new Scanner(new File(table.toString() + ".txt"));
-		PrintStream ps = new PrintStream(new File("result" + resultNumber + ".txt"));
+		Scanner andTableScanner = new Scanner(new File(table.toString() + ".dat"));
+		PrintStream ps = new PrintStream(new File("result" + resultNumber + ".dat"));
 		
 		// Writes the header
 		ps.println(andTableScanner.nextLine());
 		
-		int numOfColumns = countColumns(table.toString() + ".txt");
+		int numOfColumns = countColumns(table.toString() + ".dat");
 		
 		// goes through each row and returns the ones whose predicate is true
 		while (andTableScanner.hasNext()) { 
@@ -192,7 +267,7 @@ public class ExecutionEngine {
 		Scanner t2Scanner = new Scanner(new File(table2));
 		
 		// File we're writing to
-		PrintStream ps = new PrintStream(new File("result" + resultNumber + ".txt"));
+		PrintStream ps = new PrintStream(new File("result" + resultNumber + ".dat"));
 		
 		
 		String header1 = t1Scanner.nextLine();
