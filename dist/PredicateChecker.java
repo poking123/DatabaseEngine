@@ -5,6 +5,11 @@ public class PredicateChecker {
 	private ArrayList<Integer> operators;
 	private ArrayList<Integer> values;
 	
+	public PredicateChecker() {
+		operators = new ArrayList<>();
+		values = new ArrayList<>();
+	}
+	
 	public void addPredicate(int operator, int value) {
 		operators.add(operator);
 		values.add(value);

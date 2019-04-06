@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.LinkedList;
 
 public class ExecutionEngine {
 	
@@ -30,7 +31,7 @@ public class ExecutionEngine {
 		this.catalog = catalog;
 	}
 	
-	public void predicateScan(String tableName, ArrayList<int[]> data) throws IOException {
+	public String predicateScan(String tableName, ArrayList<int[]> data) throws IOException {
 		// int[] has
 		// index 0 = column
 		// index 1 = comparing value
@@ -56,12 +57,13 @@ public class ExecutionEngine {
 		// Gets list of columns we have to check
 		HashSet<Integer> checkColumns = new HashSet<>(columnMap.keySet());
 		
-		// Reading Data Example
+		// Reading Data
 		DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat")));
 		
 		// Get number of columns
 		int numOfCols = catalog.getColumns(tableName);
 		
+		// DataOutputStream to write the output
 		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName + "-short.dat")));
 		
 		try {
@@ -87,6 +89,118 @@ public class ExecutionEngine {
 			
 		}
 		dis.close();
+		
+		return tableName + "-short.dat";
+	}
+	
+	public String equiJoinBNLJ(String table1FileName, String table1ColName, String table2FileName, String table2ColName) throws IOException {
+		String[] table1Arr = catalog.getColumnNames(table1FileName.substring(0,1)).split(",");
+		String[] table2Arr = catalog.getColumnNames(table2FileName.substring(0,1)).split(",");
+		
+		// Join columns for each table
+		int table1JoinCol = findIndex(table1Arr, table1ColName);
+		int table2JoinCol = findIndex(table2Arr, table2ColName);
+		
+		// Reading Table1 Data
+		DataInputStream dis1 = new DataInputStream(new BufferedInputStream(new FileInputStream(table1FileName)));
+		
+		// Total columns for each table
+		int table1NumCols = table1Arr.length;
+		int table2NumCols = table2Arr.length;
+		
+		// Buffer
+		Queue<int[]> table1Buffer = new LinkedList<>();
+		
+		// DataOutputStream to write the output
+		String tableName = "result" + resultNumber + ".dat";
+		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName)));
+		resultNumber++;
+
+		try {
+			while (true) { // Reads dis1 InputStream
+				int[] table1Row = new int[table1NumCols];
+				for (int i = 0; i < table1NumCols; i++) 
+					table1Row[i] = dis1.readInt();
+				table1Buffer.add(table1Row);
+
+				if (table1Buffer.size() < 1000) continue;
+				
+				// Reading Table2 Data
+				DataInputStream dis2 = new DataInputStream(new BufferedInputStream(new FileInputStream(table2FileName)));
+				try { // Reads dis2 InputStream
+					while (true) {
+						int[] table2Row = new int[table2NumCols];
+						for (int i = 0; i < table2NumCols; i++) 
+							table2Row[i] = dis2.readInt();
+						
+						// Iterates over table1Buffer
+						Iterator<int[]> itr = table1Buffer.iterator();
+						while (itr.hasNext()) {
+							int[] table1TempRow = itr.next();
+
+							if (table1TempRow[table1JoinCol] == table2Row[table2JoinCol]) {
+								// Writes the combined row of the 2 tables
+								for (int i : table1TempRow) {
+									dos.writeInt(i);
+								}
+								for (int i : table2Row) {
+									dos.writeInt(i);
+								}
+							}
+						}
+					}
+					
+				} catch (EOFException e) { // Done reading table2
+					
+				}
+				// Clears buffer
+				table1Buffer.clear();
+			}
+		} catch (EOFException e) { // Done reading table1
+			// If we reach the end of the file, but still have rows in our buffer
+
+			// Reading Table2 Data
+			DataInputStream dis2 = new DataInputStream(new BufferedInputStream(new FileInputStream(table2FileName)));
+			try { // Reads dis2 InputStream
+				while (true) {
+					int[] table2Row = new int[table2NumCols];
+					for (int i = 0; i < table2NumCols; i++) 
+						table2Row[i] = dis2.readInt();
+					
+					// Iterates over table1Buffer
+					Iterator<int[]> itr = table1Buffer.iterator();
+					while (itr.hasNext()) {
+						int[] table1TempRow = itr.next();
+						//System.out.println(table1TempRow[table1JoinCol] + " " + table2Row[table2JoinCol]);
+						if (table1TempRow[table1JoinCol] == table2Row[table2JoinCol]) {
+							// Writes the combined row of the 2 tables
+							for (int i : table1TempRow) {
+								dos.writeInt(i);
+							}
+							for (int i : table2Row) {
+								dos.writeInt(i);
+							}
+						}
+					}
+				}
+				
+			} catch (EOFException eof) { // Done reading table2
+				
+			}
+		}
+		
+		return tableName;
+	}
+
+	
+	
+	public int findIndex(String[] columnNames, String columnName) {
+		int i = 0;
+		while (i < columnNames.length) {
+			if (columnNames[i].equals(columnName)) return i;
+			i++;
+		}
+		return -1;
 	}
 	
 

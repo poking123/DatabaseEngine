@@ -23,6 +23,16 @@ public class DatabaseEngine {
 		loader.readAllCSVFiles(CSVFiles);
 
 		Catalog catalog = loader.getCatalog();
+
+		//////////////////////////////////////
+		ExecutionEngine executionEngine2 = new ExecutionEngine();
+		// Sets the execution engine's catalog
+		executionEngine2.setCatalog(catalog);
+
+		executionEngine2.equiJoinBNLJ("A.dat", "A.c1", "B.dat", "B.c0");
+		System.exit(0);
+		///////////////////////////////////////
+
 		
 		// PARSER
 		Parser parser = new Parser();

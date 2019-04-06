@@ -87,9 +87,9 @@ public class Loader {
 					int modIndex = index % numOfCols;
 					
 					int minValue = minArray[modIndex];
-					minArray[index] = numRead < minValue ? numRead : minValue;
+					minArray[modIndex] = numRead < minValue ? numRead : minValue;
 					int maxValue = maxArray[modIndex];
-					maxArray[index] = numRead < maxValue ? numRead : maxValue;
+					maxArray[modIndex] = numRead < maxValue ? numRead : maxValue;
 					
 					uniqueSetArray.get(modIndex).add(numRead);
 
