@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Scan implements Iterable<List<int[]>>{
+public class Scan extends RAOperation implements Iterable<List<int[]>> {
 
 	private List<ArrayList<int[]>> list = new ArrayList<>();
 	private String tableName;
@@ -14,6 +14,10 @@ public class Scan implements Iterable<List<int[]>>{
 	
 	public Scan(String tableName) throws FileNotFoundException {
 		this.tableName = tableName;
+	}
+	
+	public String getType() {
+		return "scan";
 	}
 	
 	@Override

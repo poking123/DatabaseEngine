@@ -13,9 +13,14 @@ public class Optimizer {
 	private Deque<String[]> disjointDeque;
 	private HashMap<Character, Queue<String[]>> predicateJoinQueueMap;
 	
+	private HashMap<String, Integer> costMap;
+	private ArrayList<HashMap<Character, String>> whereTables;
+	
 	public Optimizer() {
 		disjointDeque = new ArrayDeque<>();
 		predicateJoinQueueMap = new HashMap<>();
+		
+		costMap = new HashMap<>();
 	}
 	
 	public Deque<String[]> getDisjointDeque() {
@@ -30,7 +35,7 @@ public class Optimizer {
 		for (char firstTable : fromData) {
 			for (char secondTable : fromData) {
 				String table = firstTable + secondTable + "";
-				//if (firstTable != secondTable) costMap.put(table, cost(table));
+				if (firstTable != secondTable) costMap.put(table, cost(table));
 			}
 		}
 	}
@@ -46,36 +51,106 @@ public class Optimizer {
 		return null;
 	}
 	
-	public int cost(String tables, int[] joinIndices) {
-		if (joinIndices == null) return Integer.MAX_VALUE; // cost is high if there is no equijoin
+	public int cost(String tables) {
+		// String tables is just a string, where each character is a table
 		
-		int cost = -1;
 		char[] tablesCharArray = tables.toCharArray();
 		char table1 = tablesCharArray[0];
+		String table1FileName = table1 + ".dat";
+		
+		int table1NumRows = Catalog.getRows(table1FileName);
+		int[] table1UniqueColumns = Catalog.getUniqueColumns(table1FileName);
+		StringBuilder table1Header = new StringBuilder(Catalog.getHeader(table1FileName));
+		
+		
 		for (int i = 1; i < tablesCharArray.length; i++) {
 			char table2 = tablesCharArray[i];
+			String table2FileName = table2 + ".dat";
 			HashMap<Character, String> equijoinMap = returnEquijoinMap(table1, table2);
-			//int table1JoinCol = equijoinMap.get(table1);
+			if (equijoinMap == null) { // no equijoin, so cost is high
+				return Integer.MAX_VALUE;
+			}
 
-			//if (catalog.getRows(table) == catalog.getUnique(tableName, column))
+			int table2NumRows = Catalog.getRows(table2FileName);
+			
+			String[] table2HeaderArr = Catalog.getHeader(table2FileName).split(",");
+			String table2JoinColName = equijoinMap.get(table2);
+			
+			int[] table2UniqueColumns = Catalog.getUniqueColumns(table2FileName);
+			
+			
+			
+			//int table1NumUniqueCol = table1UniqueColumns[table1JoinCol];
+			//int table2NumUniqueCol = Catalog.getUnique(table2FileName, table2JoinCol);
+			
+			//int minUnique = table1NumUniqueCol < table2NumUniqueCol ? table1NumUniqueCol : table2NumUniqueCol;
+			
+			// calculates meta data for current table1
+			
+			// estimated rows for joined table
+			//table1NumRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol;
+			
+			// unique
 		}
 		
-		return cost;
+		return table1NumRows;
+	}
+	
+	public int findIndex(String[] columnNames, String columnName) {
+		int i = 0;
+		while (i < columnNames.length) {
+			if (columnNames[i].equals(columnName)) return i;
+			i++;
+		}
+		return -1;
+	}
+	
+	public int[] combineRows(int[] row1, int[] row2) {
+		int[] combinedRow = new int[row1.length + row2.length];
+		int i = 0;
+		int totalIndex = 0;
+		
+		while (i < row1.length) {
+			combinedRow[totalIndex] = row1[totalIndex];
+			i++;
+			totalIndex++;
+		}
+		
+		i = 0;
+		
+		while (i < row2.length) {
+			combinedRow[totalIndex] = row2[i];
+			i++;
+			totalIndex++;
+		}
+		
+		return combinedRow;
 	}
 	
 	public HashMap<Character, String> returnEquijoinMap(char table1, char table2) {
-//		for (HashMap<Character, String> map : whereDataMapCopy) {
-//			if (map.containsKey(table1) && map.containsKey(table2)) {
-//				return map;
-//			}
-//		}
-		System.out.println("Optimizer Error: in function returnEquijoinMap");
-		return null; // should not get here
+		for (HashMap<Character, String> map : whereTables) {
+			if (map.containsKey(table1) && map.containsKey(table2)) {
+				return map;
+			}
+		}
+		
+		return null; // no equijoin
 	}
+	
+	public int getJoinCol(HashMap<Character, String> equijoinMap, char tableName) {
+		String tableNameAndColumn = equijoinMap.get(tableName);
+		int cIndex = tableNameAndColumn.indexOf(".c");
+		int joinCol = Integer.parseInt(tableNameAndColumn.substring(cIndex + 2, tableNameAndColumn.length()));
+		
+		return joinCol;
+	}
+	
 	
 	public void optimizeQuery(ArrayList<Character> fromData, WhereData whereData, AndData andData) {
 		// Equijoins table names
-		ArrayList<HashMap<Character, String>> whereTables = whereData.getTables();
+		// each hashmap contains 2 elements
+		// tableName -> tableName.columnNumber
+		whereTables = whereData.getTables();
 		
 		// Match an andTable to equijoins with that table
 		HashSet<Character> andTableNames = andData.getTableNames();

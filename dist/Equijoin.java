@@ -2,16 +2,20 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Equijoin implements Iterable<List<int[]>> {
+public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 	private Iterable<List<int[]>> source1;
 	private Iterable<List<int[]>> source2;
 	
 	private EquijoinPredicate equijoinPredicate;
 
-	public Equijoin(Iterable<List<int[]>> source1, Iterable<List<int[]>> source2, EquijoinPredicate equijoinPredicate) {
+	public Equijoin(RAOperation source1, RAOperation source2, EquijoinPredicate equijoinPredicate) {
 		this.source1 = source1;
 		this.source2 = source2;
 		this.equijoinPredicate = equijoinPredicate;
+	}
+	
+	String getType() {
+		return "equijoin";
 	}
 	
 	@Override
@@ -88,6 +92,8 @@ public class Equijoin implements Iterable<List<int[]>> {
 		}
 		
 	}
+
+	
 	
 	
 	

@@ -59,6 +59,10 @@ public class TableMetaData {
         return this.unique[column];
     }
     
+    public int[] getUniqueColumns() {
+    	return this.unique;
+    }
+    
     public String getColumnNames() {
         return this.columnNames;
     }

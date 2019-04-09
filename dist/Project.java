@@ -2,13 +2,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Project implements Iterable<List<int[]>>{
+public class Project extends RAOperation implements Iterable<List<int[]>>{
 	private Iterable<List<int[]>> source;
 	private int[] colsToKeep;
 	
 	public Project(Iterable<List<int[]>> input, int[] colsToKeep) {
 		this.source = input;
 		this.colsToKeep = colsToKeep;
+	}
+	
+	public String getType() {
+		return "project";
 	}
 	
 	@Override

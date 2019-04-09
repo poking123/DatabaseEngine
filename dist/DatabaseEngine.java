@@ -96,8 +96,9 @@ public class DatabaseEngine {
 			parser.readQuery(queryScanner);
 			queryScanner.nextLine(); // Blank Line
 			
-			optimizer.optimizeQuery(parser.getFromData(), parser.getWhereData(), parser.getAndData());
+			//optimizer.optimizeQuery(parser.getFromData(), parser.getWhereData(), parser.getAndData());
 			
+			// AndData
 			HashMap<Character, ArrayList<int[]>> tablePredicateMap = parser.getAndData().getTablePredicateMap(); // tableName -> predicate data
 			
 			// Execute Query

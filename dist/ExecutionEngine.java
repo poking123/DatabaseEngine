@@ -15,6 +15,8 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 public class ExecutionEngine {
@@ -31,36 +33,64 @@ public class ExecutionEngine {
 		finalDeque = new ArrayDeque<>();
 	}
 	
+	public void executeQuery(Deque<RAOperation> tableDeque, Queue<Predicate> predicateQueue) {
+		Queue<RAOperation> resultQueue = new LinkedList<>();
+		
+		while (!predicateQueue.isEmpty()) {
+			Predicate currentPredicate = predicateQueue.remove();
+			switch (currentPredicate.getType()) {
+				case "filterPredicate": // take off from deque, filter, and put on result queue
+					RAOperation operation = tableDeque.pop();
+					FilterPredicate fp = (FilterPredicate) currentPredicate;
+					Filter filter = new Filter(operation, fp);
+					resultQueue.add(filter); // adds result to result queue
+					break;
+					
+				case "equijoinPredicate": 
+					// makes sure result queue size is 2
+					while (resultQueue.size() < 2) {
+						resultQueue.add(tableDeque.pop());
+					}
+					
+					EquijoinPredicate ep = (EquijoinPredicate) currentPredicate;
+					Equijoin equijoin = new Equijoin(resultQueue.remove(), resultQueue.remove(), ep);
+					resultQueue.add(equijoin); // adds result to result queue
+					break;
+			}
+		}
+	}
+	
 	public void executeQuery(String selectColumnNames, HashMap<Character, ArrayList<int[]>> tablePredicateMap, HashMap<Character, Queue<String[]>> predicateJoinQueueMap, Deque<String[]> disjointDeque) throws IOException {
-		HashSet<Character> predicateTables = new HashSet<>(tablePredicateMap.keySet());
-		Iterator<Character> predicateTablesItr = predicateTables.iterator();
+		
+		// Get set of predicates
+		//HashSet<Character> predicateTables = new HashSet<>(tablePredicateMap.keySet());
+		//Iterator<Character> predicateTablesItr = predicateTables.iterator();
 		String result = "";
 		// For each Predicate Table
-		while (predicateTablesItr.hasNext()) { 
-			System.out.println("got in predicate while loop");
-			char predicateTable = predicateTablesItr.next();
-			// Perform predicateScan
-			ArrayList<int[]> predicateScanData = tablePredicateMap.get(predicateTable);
-			result = predicateScan(Character.toString(predicateTable), predicateScanData);
-			
-			// Get Predicate Queue
-			Queue<String[]> predicateQueue = predicateJoinQueueMap.get(predicateTable);
-			// Equijoin other tables (in the queue)
-			while (!predicateQueue.isEmpty()) { 
-				// index 0 - predicateTableColumnName
-				// index 1 - otherTableName
-				// index 2 - otherTableColumnName
-				String[] tempTableData = predicateQueue.remove();
-				//System.out.println("Predicates equijoin:");
-				//System.out.println(result);
-				//System.out.println(tempTableData[1] + ".dat");
-				result = equijoinBNLJ(result, tempTableData[0], tempTableData[1] + ".dat", tempTableData[2]);
-			}
-			
-			// Put result in finalDeque
-			finalDeque.push(result);
-			System.out.println("in while loop");
-		}
+//		while (predicateTablesItr.hasNext()) { 
+//			char predicateTable = predicateTablesItr.next();
+//			// Perform predicateScan
+//			ArrayList<int[]> predicateScanData = tablePredicateMap.get(predicateTable);
+//			result = predicateScan(Character.toString(predicateTable), predicateScanData);
+//			
+//			// Get Predicate Queue
+//			Queue<String[]> predicateQueue = predicateJoinQueueMap.get(predicateTable);
+//			// Equijoin other tables (in the queue)
+//			while (!predicateQueue.isEmpty()) { 
+//				// index 0 - predicateTableColumnName
+//				// index 1 - otherTableName
+//				// index 2 - otherTableColumnName
+//				String[] tempTableData = predicateQueue.remove();
+//				//System.out.println("Predicates equijoin:");
+//				//System.out.println(result);
+//				//System.out.println(tempTableData[1] + ".dat");
+//				result = equijoinBNLJ(result, tempTableData[0], tempTableData[1] + ".dat", tempTableData[2]);
+//			}
+//			
+//			// Put result in finalDeque
+//			finalDeque.push(result);
+//			System.out.println("in while loop");
+//		}
 		System.out.println("out of while loop");
 		//System.out.println("disjointDeque:");
 		// For each element in disjointDeque
@@ -158,7 +188,7 @@ public class ExecutionEngine {
 		dis.close();
 		dos.close();
 		
-		TableMetaData metadata = new TableMetaData(Catalog.getColumnNames(tableName)); // header is the same for a predicate scan
+		TableMetaData metadata = new TableMetaData(Catalog.getHeader(tableName)); // header is the same for a predicate scan
 		Catalog.addData(tableName + "-short", metadata);
 		
 		return tableName + "-short.dat";
@@ -173,8 +203,8 @@ public class ExecutionEngine {
 		String table2Name = table2FileName.substring(0, table2DotIndex);
 		// System.out.println("table1Name: " + table1Name + " - EE 164");
 		// System.out.println("table1Name: " + table2Name + " - EE 165");
-		String table1Header = Catalog.getColumnNames(table1Name);
-		String table2Header = Catalog.getColumnNames(table2Name);
+		String table1Header = Catalog.getHeader(table1Name);
+		String table2Header = Catalog.getHeader(table2Name);
 		// System.out.println(table1Header + " - EE 173");
 		// System.out.println(table2Header + " - EE 174");
 
@@ -349,8 +379,8 @@ public class ExecutionEngine {
 		int table1DotIndex = table1FileName.indexOf('.');
 		int table2DotIndex = table2FileName.indexOf('.');
 		
-		String table1Header = Catalog.getColumnNames(table1FileName.substring(0, table1DotIndex));
-		String table2Header = Catalog.getColumnNames(table2FileName.substring(0, table2DotIndex));
+		String table1Header = Catalog.getHeader(table1FileName.substring(0, table1DotIndex));
+		String table2Header = Catalog.getHeader(table2FileName.substring(0, table2DotIndex));
 		
 		String[] table1Arr = table1Header.split(",");
 		String[] table2Arr = table2Header.split(",");
@@ -463,7 +493,7 @@ public class ExecutionEngine {
 		int[] sums = new int[numOfSumCols]; // sum holder array
 		//System.out.println(numOfSumCols + " - numOfSumCols - sumAggregate - 386");
 		
-		String header = Catalog.getColumnNames(tableFileName.substring(0, tableFileName.length() - 4));
+		String header = Catalog.getHeader(tableFileName.substring(0, tableFileName.length() - 4));
 		String[] headerArr = header.split(",");
 		int numOfCols = headerArr.length;
 		//System.out.println("numOfCols = " + numOfCols + " - sumAggregate - 392");

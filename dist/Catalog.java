@@ -12,6 +12,10 @@ public class Catalog {
     public static DataInputStream openStream(String tableName) throws FileNotFoundException {
     	return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName)));
     }
+    
+    public static boolean containsTable(String tableName) {
+    	return metaDataMap.containsKey(tableName);
+    }
 
     public static void addData(String fileName, TableMetaData metadata) {
         metaDataMap.put(fileName, metadata);
@@ -32,12 +36,16 @@ public class Catalog {
     public static int getUnique(String tableName, int column) {
         return metaDataMap.get(tableName).getUnique(column);
     }
+    
+    public static int[] getUniqueColumns(String tableName) {
+    	return metaDataMap.get(tableName).getUniqueColumns();
+    }
 
     public static int getColumns(String tableName) {
         return metaDataMap.get(tableName).getColumns();
     }
     
-    public static String getColumnNames(String tableName) {
+    public static String getHeader(String tableName) {
     	return metaDataMap.get(tableName).getColumnNames();
     }
     

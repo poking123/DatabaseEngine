@@ -3,13 +3,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Filter implements Iterable<List<int[]>> {
+public class Filter extends RAOperation {
 	private Iterable<List<int[]>> source;
-	private Predicate predicate;
+	private FilterPredicate predicate;
 	
-	public Filter(Iterable<List<int[]>> input, Predicate p) {
+	public Filter(RAOperation input, FilterPredicate p) {
 		this.source = input;
 		this.predicate = p;
+	}
+	
+	public String getType() {
+		return "filter";
 	}
 	
 	@Override

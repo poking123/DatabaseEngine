@@ -15,6 +15,7 @@ public class WhereData {
 	
 	public ArrayList<HashMap<Character, String>> getTables() {
 		// tables is just an arrayList with maps of equijoin tables
+		// each HashMap just has 2 elements with tableName ->  tableName.columnNumber
 		return this.tables;
 	}
 
