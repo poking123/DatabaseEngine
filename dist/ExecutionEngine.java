@@ -1,3 +1,4 @@
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -5,45 +6,107 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
-import java.util.Scanner;
-import java.util.LinkedList;
 
 public class ExecutionEngine {
 	
-	private Catalog catalog;
+	private final int bufferSize = 1000;
 	private int resultNumber;
+	private Deque<String> finalDeque;
+
+	int finalNum = 0;
+	
 	
 	public ExecutionEngine() {
 		resultNumber = 0;
-		catalog = new Catalog();
+		finalDeque = new ArrayDeque<>();
 	}
 	
-	public void setCatalog(Catalog catalog) {
-		this.catalog = catalog;
+	public void executeQuery(String selectColumnNames, HashMap<Character, ArrayList<int[]>> tablePredicateMap, HashMap<Character, Queue<String[]>> predicateJoinQueueMap, Deque<String[]> disjointDeque) throws IOException {
+		HashSet<Character> predicateTables = new HashSet<>(tablePredicateMap.keySet());
+		Iterator<Character> predicateTablesItr = predicateTables.iterator();
+		String result = "";
+		// For each Predicate Table
+		while (predicateTablesItr.hasNext()) { 
+			System.out.println("got in predicate while loop");
+			char predicateTable = predicateTablesItr.next();
+			// Perform predicateScan
+			ArrayList<int[]> predicateScanData = tablePredicateMap.get(predicateTable);
+			result = predicateScan(Character.toString(predicateTable), predicateScanData);
+			
+			// Get Predicate Queue
+			Queue<String[]> predicateQueue = predicateJoinQueueMap.get(predicateTable);
+			// Equijoin other tables (in the queue)
+			while (!predicateQueue.isEmpty()) { 
+				// index 0 - predicateTableColumnName
+				// index 1 - otherTableName
+				// index 2 - otherTableColumnName
+				String[] tempTableData = predicateQueue.remove();
+				//System.out.println("Predicates equijoin:");
+				//System.out.println(result);
+				//System.out.println(tempTableData[1] + ".dat");
+				result = equijoinBNLJ(result, tempTableData[0], tempTableData[1] + ".dat", tempTableData[2]);
+			}
+			
+			// Put result in finalDeque
+			finalDeque.push(result);
+			System.out.println("in while loop");
+		}
+		System.out.println("out of while loop");
+		//System.out.println("disjointDeque:");
+		// For each element in disjointDeque
+		while (!disjointDeque.isEmpty()) {
+			System.out.println("in disjointDeque loop");
+			// index 0 - table1 name
+			// index 1 - table1 column name
+			// index 2 - table2 name
+			// index 3 - table2 column name
+			String[] equijoinData = disjointDeque.pop();
+			//System.out.println("disjointDeque Equijoin:");
+			result = equijoinBNLJ(equijoinData[0], equijoinData[1], equijoinData[2], equijoinData[3]);
+			// Put result in finalDeque
+			finalDeque.push(result);
+		}
+		System.out.println("out of disjointDeque loop");
+		// Cross Product all tables in finalDeque
+		while (finalDeque.size() != 1) {
+			String table1 = finalDeque.pop();
+			String table2 = finalDeque.pop();
+			//System.out.println("finalDeque:");
+			// NEED TO CHANGE TO EQUIJOIN OR NOPREDICATEJOIN based on join columns
+			result = noPredicateJoin(table1, table2);
+			finalDeque.push(result);
+		}
+		
+		// Get the sum of the selected columns and print the results
+		sumAggregate(result, selectColumnNames);
 	}
 	
 	public String predicateScan(String tableName, ArrayList<int[]> data) throws IOException {
+		// System.out.println("Predicate Scan: " + tableName);
+
 		// int[] has
 		// index 0 = column
-		// index 1 = comparing value
-		// index 2 = operator
-		// 0 is =, 1 is <, 2 is >
+		// index 1 = operator // 0 is =, 1 is <, 2 is >
+		// index 2 = comparing value
+		
 		
 		// for each predicate, map the column to a PredicateChecker Object
 		HashMap<Integer, PredicateChecker> columnMap = new HashMap<>(); // each column maps to a predicate checker
 		for (int i = 0; i < data.size(); i++) {
-			int column = data.get(i)[0];
-			int compareValue = data.get(i)[1];
-			int operator = data.get(i)[2];
+			int[] predicateData = data.get(i);
+			int column = predicateData[0];
+			int operator = predicateData[1];
+			int compareValue = predicateData[2];
 			
 			if (!columnMap.containsKey(column)) { // first time seeing a predicate on a column
 				PredicateChecker pc = new PredicateChecker();
@@ -61,7 +124,7 @@ public class ExecutionEngine {
 		DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat")));
 		
 		// Get number of columns
-		int numOfCols = catalog.getColumns(tableName);
+		int numOfCols = Catalog.getColumns(tableName);
 		
 		// DataOutputStream to write the output
 		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName + "-short.dat")));
@@ -81,38 +144,121 @@ public class ExecutionEngine {
 						leaveLoop = true;
 				}
 				if (leaveLoop == false) { // leaveLoop is false if we checked all the column predicates and they were all true
-					for (int i : row) // writes the row
+					for (int i : row) { // writes the row
 						dos.writeInt(i);
+						// System.out.print(i + " ");
+					}
+					// System.out.println();
+					// System.out.println();
 				}
 			}
 		} catch (EOFException e) { // Done reading the file
 			
 		}
 		dis.close();
+		dos.close();
+		
+		TableMetaData metadata = new TableMetaData(Catalog.getColumnNames(tableName)); // header is the same for a predicate scan
+		Catalog.addData(tableName + "-short", metadata);
 		
 		return tableName + "-short.dat";
 	}
 	
-	public String equiJoinBNLJ(String table1FileName, String table1ColName, String table2FileName, String table2ColName) throws IOException {
-		String[] table1Arr = catalog.getColumnNames(table1FileName.substring(0,1)).split(",");
-		String[] table2Arr = catalog.getColumnNames(table2FileName.substring(0,1)).split(",");
+	public String equijoinBNLJ(String table1FileName, String table1ColName, String table2FileName, String table2ColName) throws IOException {
+		//System.out.println("Equijoin:");
+		int table1DotIndex = table1FileName.indexOf('.');
+		int table2DotIndex = table2FileName.indexOf('.');
+
+		String table1Name = table1FileName.substring(0, table1DotIndex);
+		String table2Name = table2FileName.substring(0, table2DotIndex);
+		// System.out.println("table1Name: " + table1Name + " - EE 164");
+		// System.out.println("table1Name: " + table2Name + " - EE 165");
+		String table1Header = Catalog.getColumnNames(table1Name);
+		String table2Header = Catalog.getColumnNames(table2Name);
+		// System.out.println(table1Header + " - EE 173");
+		// System.out.println(table2Header + " - EE 174");
+
+		String[] table1Arr = table1Header.split(",");
+		String[] table2Arr = table2Header.split(",");
+
+		// System.out.println(table1ColName + " - EE 179");
+		// System.out.println(table2ColName + " - EE 180");
 		
-		// Join columns for each table
-		int table1JoinCol = findIndex(table1Arr, table1ColName);
-		int table2JoinCol = findIndex(table2Arr, table2ColName);
-		
-		// Reading Table1 Data
-		DataInputStream dis1 = new DataInputStream(new BufferedInputStream(new FileInputStream(table1FileName)));
+		// DataOutputStream to write the output
+		String result = "result" + resultNumber;
+		String tableName = result + ".dat";
 		
 		// Total columns for each table
 		int table1NumCols = table1Arr.length;
 		int table2NumCols = table2Arr.length;
 		
-		// Buffer
-		Queue<int[]> table1Buffer = new LinkedList<>();
+		TableMetaData metadata = new TableMetaData("");
 		
-		// DataOutputStream to write the output
-		String tableName = "result" + resultNumber + ".dat";
+		// Checks if table2 column is already in table 1
+		if (table1Header.indexOf(table2ColName) == -1) { // table 1 does not contain table2ColName
+			
+			// Join columns for each table
+			int table1JoinCol = findIndex(table1Arr, table1ColName);
+			int table2JoinCol = findIndex(table2Arr, table2ColName);
+			
+			equijoinTwoTables(tableName, table1FileName, table2FileName, table1NumCols, table2NumCols, table1JoinCol, table2JoinCol);
+			metadata = new TableMetaData(table1Header + "," + table2Header);
+			
+		} else { // table 1 does contains table2ColName
+			// Join columns for each table
+			int table1JoinCol = findIndex(table1Arr, table1ColName);
+			int table2JoinCol = findIndex(table1Arr, table2ColName);
+			
+			equijoinOneTable(tableName, table1FileName, table1NumCols, table1JoinCol, table2JoinCol);
+			metadata = new TableMetaData(table1Header);
+		}
+
+		// Metadata for the new table
+		Catalog.addData(result, metadata);
+		if (table1Name.length() > 1) 
+			Catalog.removeData(table1Name);
+		if (table2Name.length() > 1)
+		Catalog.removeData(table2Name);
+		
+		return tableName;
+	}
+	
+	public void equijoinOneTable(String tableName, String table1FileName, int table1NumCols, int table1JoinCol, int table2JoinCol) throws IOException {
+		// Reading Table1 Data
+		DataInputStream dis1 = new DataInputStream(new BufferedInputStream(new FileInputStream(table1FileName)));
+		
+		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName)));
+		resultNumber++;
+		
+		try {
+			while (true) {
+				int[] table1Row = new int[table1NumCols];
+				for (int i = 0; i < table1NumCols; i++) 
+					table1Row[i] = dis1.readInt();
+				
+				if (table1Row[table1JoinCol] == table1Row[table2JoinCol]) {
+					// Writes the combined row of the 2 tables
+					for (int i : table1Row) {
+						dos.writeInt(i);
+						System.out.print(i + " |");
+					}
+					System.out.println();
+				}
+
+			}
+		} catch (EOFException e) { // Done reading table1
+			
+		}
+		dos.close();
+	}
+	
+	public void equijoinTwoTables(String tableName, String table1FileName, String table2FileName, int table1NumCols, int table2NumCols, int table1JoinCol, int table2JoinCol) throws IOException {
+		// Reading Table1 Data
+		DataInputStream dis1 = new DataInputStream(new BufferedInputStream(new FileInputStream(table1FileName)));
+		
+		// Buffer
+		ArrayList<int[]> table1Buffer = new ArrayList<>();
+		
 		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName)));
 		resultNumber++;
 
@@ -123,7 +269,7 @@ public class ExecutionEngine {
 					table1Row[i] = dis1.readInt();
 				table1Buffer.add(table1Row);
 
-				if (table1Buffer.size() < 1000) continue;
+				if (table1Buffer.size() < bufferSize) continue;
 				
 				// Reading Table2 Data
 				DataInputStream dis2 = new DataInputStream(new BufferedInputStream(new FileInputStream(table2FileName)));
@@ -142,10 +288,13 @@ public class ExecutionEngine {
 								// Writes the combined row of the 2 tables
 								for (int i : table1TempRow) {
 									dos.writeInt(i);
+									// System.out.print(i + " |");
 								}
 								for (int i : table2Row) {
 									dos.writeInt(i);
+									// System.out.print(i + " |");
 								}
+								// System.out.println();
 							}
 						}
 					}
@@ -171,15 +320,19 @@ public class ExecutionEngine {
 					Iterator<int[]> itr = table1Buffer.iterator();
 					while (itr.hasNext()) {
 						int[] table1TempRow = itr.next();
-						//System.out.println(table1TempRow[table1JoinCol] + " " + table2Row[table2JoinCol]);
+						
 						if (table1TempRow[table1JoinCol] == table2Row[table2JoinCol]) {
 							// Writes the combined row of the 2 tables
 							for (int i : table1TempRow) {
 								dos.writeInt(i);
+								// System.out.print(i + " |");
 							}
 							for (int i : table2Row) {
 								dos.writeInt(i);
+								// System.out.print(i + " |");
 							}
+							// System.out.println();
+							// System.out.println();
 						}
 					}
 				}
@@ -189,10 +342,187 @@ public class ExecutionEngine {
 			}
 		}
 		
+		dos.close();
+	}
+	
+	public String noPredicateJoin(String table1FileName, String table2FileName) throws IOException {	
+		int table1DotIndex = table1FileName.indexOf('.');
+		int table2DotIndex = table2FileName.indexOf('.');
+		
+		String table1Header = Catalog.getColumnNames(table1FileName.substring(0, table1DotIndex));
+		String table2Header = Catalog.getColumnNames(table2FileName.substring(0, table2DotIndex));
+		
+		String[] table1Arr = table1Header.split(",");
+		String[] table2Arr = table2Header.split(",");
+		
+		// Total columns for each table
+		int table1NumCols = table1Arr.length;
+		int table2NumCols = table2Arr.length;
+		
+		// Reading Table1 Data
+		DataInputStream dis1 = new DataInputStream(new BufferedInputStream(new FileInputStream(table1FileName)));
+		
+		ArrayList<int[]> table1Buffer = new ArrayList<>();
+		
+		// DataOutputStream to write the output
+		String result = "result" + resultNumber;
+		String tableName = result + ".dat";
+		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName)));
+		resultNumber++;
+		
+		try {
+			while (true) { // Reads dis1 InputStream
+				int[] table1Row = new int[table1NumCols];
+				for (int i = 0; i < table1NumCols; i++) 
+					table1Row[i] = dis1.readInt();
+				table1Buffer.add(table1Row);
+
+				if (table1Buffer.size() < bufferSize) continue;
+				
+				// Reading Table2 Data
+				DataInputStream dis2 = new DataInputStream(new BufferedInputStream(new FileInputStream(table2FileName)));
+				try { // Reads dis2 InputStream
+					while (true) {
+						int[] table2Row = new int[table2NumCols];
+						for (int i = 0; i < table2NumCols; i++) 
+							table2Row[i] = dis2.readInt();
+						
+						// Iterates over table1Buffer
+						Iterator<int[]> itr = table1Buffer.iterator();
+						while (itr.hasNext()) {
+							int[] table1TempRow = itr.next();
+
+							// Writes the combined row of the 2 tables
+							for (int i : table1TempRow) {
+								dos.writeInt(i);
+							}
+							for (int i : table2Row) {
+								dos.writeInt(i);
+							}
+							
+						}
+					}
+					
+				} catch (EOFException e) { // Done reading table2
+					
+				}
+				// Clears buffer
+				table1Buffer.clear();
+				
+			}
+		} catch (EOFException e) { // Done reading table1
+			// If we reach the end of the file, but still have rows in our buffer
+			
+			// Reading Table2 Data
+			DataInputStream dis2 = new DataInputStream(new BufferedInputStream(new FileInputStream(table2FileName)));
+			try { // Reads dis2 InputStream
+				while (true) {
+					int[] table2Row = new int[table2NumCols];
+					for (int i = 0; i < table2NumCols; i++) 
+						table2Row[i] = dis2.readInt();
+					
+					// Iterates over table1Buffer
+					Iterator<int[]> itr = table1Buffer.iterator();
+					while (itr.hasNext()) {
+						int[] table1TempRow = itr.next();
+
+						// Writes the combined row of the 2 tables
+						for (int i : table1TempRow) {
+							dos.writeInt(i);
+						}
+						for (int i : table2Row) {
+							dos.writeInt(i);
+						}
+						
+					}
+				}
+				
+			} catch (EOFException eof) { // Done reading table2
+				
+			}
+		}
+
+		dos.close();
+		
+		TableMetaData metadata = new TableMetaData(table1Header + "," + table2Header);
+		Catalog.addData(result, metadata);
+		Catalog.removeData(table1FileName.substring(0, table1FileName.length() - 4));
+		Catalog.removeData(table2FileName.substring(0, table2FileName.length() - 4));
+		
 		return tableName;
+		
 	}
 
-	
+	public void sumAggregate(String tableFileName, String columnNames) throws IOException {
+		//System.out.println(tableFileName + "-------");
+		//System.out.println(columnNames + " - sumAggregate - 381");
+		String[] columnNameArr = columnNames.split(",");
+		int numOfSumCols = columnNameArr.length;
+		
+		int[] sumColIndices = new int[numOfSumCols]; // column array - which column we are summing
+		int[] sums = new int[numOfSumCols]; // sum holder array
+		//System.out.println(numOfSumCols + " - numOfSumCols - sumAggregate - 386");
+		
+		String header = Catalog.getColumnNames(tableFileName.substring(0, tableFileName.length() - 4));
+		String[] headerArr = header.split(",");
+		int numOfCols = headerArr.length;
+		//System.out.println("numOfCols = " + numOfCols + " - sumAggregate - 392");
+		// Finds the index of each column
+		for (int i = 0; i < numOfSumCols; i++) {
+			sumColIndices[i] = findIndex(headerArr, columnNameArr[i]);
+			//System.out.println(sumColIndices[i] + " - sumAggregate - 396");
+		}
+		
+		// Reading Table Data
+		DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableFileName)));
+		
+		boolean hasRows = false;
+
+		try {
+			while (true) {
+				// Stores a row of the data
+				int[] row = new int[numOfCols];
+				for (int i = 0; i < numOfCols; i++) {
+					row[i] = dis.readInt();
+				}
+				hasRows = true;
+				
+				for (int i = 0; i < sumColIndices.length; i++) {
+					int index = sumColIndices[i];
+					sums[i] += row[index];
+				}
+			}
+		} catch (EOFException e) { // Finished reading table
+			
+		}
+
+		dis.close();
+		
+		
+		PrintStream ps = new PrintStream(new File("sum" + finalNum + ".txt"));
+		finalNum++;
+
+		if (hasRows) {
+			// Prints out the output
+			for (int i = 0; i < sums.length - 1; i++) {
+				System.out.print(sums[i] + ",");
+				ps.print(sums[i] + ",");
+			}
+			System.out.println(sums[sums.length - 1]);
+			ps.print(sums[sums.length - 1]);
+		} else {
+			for (int i = 0; i < sums.length - 1; i++)
+				System.out.print(",");
+			System.out.println();
+			//System.out.println("No rows.");
+		}
+		
+		
+		this.resultNumber = 0; // resets the result number
+		this.finalDeque = new ArrayDeque<>();
+		
+		Catalog.removeData(tableFileName.substring(0, tableFileName.length() - 4)); // removes the table from the map
+	}
 	
 	public int findIndex(String[] columnNames, String columnName) {
 		int i = 0;
@@ -201,302 +531,5 @@ public class ExecutionEngine {
 			i++;
 		}
 		return -1;
-	}
-	
-
-    public void executeQuery(Queue<String> columnsQueue, ArrayList<String> fromColumns, ArrayList<String> whereColumns, ArrayList<String> andColumns) throws FileNotFoundException {
-        // AND - Sigma
-        StringBuilder andTable = new StringBuilder();
-        resultNumber = andPredicate(andColumns, andTable, resultNumber);
-        
-        // WHERE
-        String toRemove = "";
-        for (String s : whereColumns) { // Do 1 join where andTable is used
-            if (containsTable(s, andTable.toString().charAt(0))) {
-                // parses the where column element
-                String[] tablesArr = s.split("=");
-                String[] leftTableArr = tablesArr[0].split(".c");
-                String[] rightTableArr = tablesArr[1].split(".c");
-                // Gets the tables and the desired columns
-                String leftTable = leftTableArr[0];
-                int leftTableCol = Integer.parseInt(leftTableArr[1]);
-                String rightTable = rightTableArr[0];
-                int rightTableCol = Integer.parseInt(rightTableArr[1]);
-                // Gets the table and column that we are joining
-                String joinTable =  "";
-                int joinCol = -1;
-                int table1JoinCol = -1;
-                if (leftTable.equals(andTable.toString())) {
-                    joinTable =  rightTable;
-                    joinCol = rightTableCol;
-                    table1JoinCol = leftTableCol;
-                } else {
-                    joinTable =  leftTable;
-                    joinCol = leftTableCol;
-                    table1JoinCol = rightTableCol;
-                }
-                
-                String table1 = "result" + resultNumber + ".dat";
-                String table2 = joinTable + ".dat";
-                resultNumber++;
-                
-                joinTables(table1, table1JoinCol, table2, joinCol, resultNumber, false);
-                toRemove = s;
-                break;
-            }
-        }
-        // Removes the join just executed
-        whereColumns.remove(toRemove);
-        
-        // Iterates over the joins and does the ones that the AND predicate was on
-        Iterator<String> itr = whereColumns.iterator();
-        while (itr.hasNext()) {
-            String join = itr.next();
-            
-            if (containsTable(join, andTable.toString().charAt(0))) { // andTable is just the table letter from the AND query
-                // parses the where column element
-                String[] tablesArr = join.split("=");
-                String[] leftTableArr = tablesArr[0].split("\\.");
-                String[] rightTableArr = tablesArr[1].split("\\.");
-                // Gets the tables and the desired columns
-                String leftTable = leftTableArr[0];
-                int leftTableCol = Integer.parseInt(leftTableArr[1].substring(1));
-                String rightTable = rightTableArr[0];
-                int rightTableCol = Integer.parseInt(rightTableArr[1].substring(1));
-                // Gets the table and column that we are joining
-                String joinTable =  "";
-                int joinCol = -1;
-                boolean left = false;
-                if (leftTable.equals(andTable.toString())) {
-                    joinTable =  rightTable;
-                    joinCol = rightTableCol;
-                    left = true;
-                } else {
-                    joinTable =  leftTable;
-                    joinCol = leftTableCol;
-                }
-                
-                String table1 = "result" + resultNumber + ".dat";
-                String table2 = joinTable + ".dat";
-                resultNumber++;
-                String colName = left ? tablesArr[0] : tablesArr[1];
-                joinTables(table1, getColumnNumber(table1, colName), table2, joinCol, resultNumber, false);
-                itr.remove();
-            }
-        }
-        
-        // STILL NEED TO JOIN OTHER TABLES THAT AREN'T LIKE THE ANDTABLE COLUMN
-        itr = whereColumns.iterator();
-        while (itr.hasNext()) {
-            String join = itr.next();
-            
-            // parses the where column element
-            String[] tablesArr = join.split("=");
-            String[] leftTableArr = tablesArr[0].split("\\.");
-            String[] rightTableArr = tablesArr[1].split("\\.");
-            // Gets the tables and the desired columns
-            String leftTable = leftTableArr[0];
-            int leftTableCol = Integer.parseInt(leftTableArr[1].substring(1));
-            String rightTable = rightTableArr[0];
-            int rightTableCol = Integer.parseInt(rightTableArr[1].substring(1));
-            
-            String table1 = leftTable + ".dat";
-            String table2 = rightTable + ".dat";
-            resultNumber++;
-            // Joins the disjoint table
-            joinTables(table1, getColumnNumber(table1, tablesArr[0]), table2, getColumnNumber(table2, tablesArr[1]), resultNumber, false);
-            
-            // Join with the current result
-            table1 = "result" + (resultNumber - 1) + ".dat";
-            table2 = "result" + resultNumber + ".dat";
-            resultNumber++;
-            // Joins the disjoint table join with the current result
-            joinTables(table1, getColumnNumber(table1, tablesArr[0]), table2, getColumnNumber(table2, tablesArr[1]), resultNumber, true);
-        }
-        
-        // PRINTS OUT RESULTS
-        printOutResults(columnsQueue, resultNumber);
-    }
-
-    public int andPredicate(ArrayList<String> andColumns, StringBuilder table, int resultNumber) throws FileNotFoundException {
-		// gets the binary operator
-		int operator = -1; // 0: =, 1: <, 2: >
-		String[] operators = {"=", "<", ">"};
-		int count = 0;
-		
-		String[] operatorArr = new String[1];
-		while (operator == -1) {
-			// determines the operator (0, 1, or 2)
-			operatorArr = andColumns.get(0).split(operators[count]);
-			if (operatorArr.length > 1) {
-				operator = count;
-			}
-			count++;
-		}
-		
-		// gets benchmark value (value to be compared)
-		int benchmark = Integer.parseInt(operatorArr[1]);
-		// splits the left side of the comparison
-		String[] leftSide = operatorArr[0].split(".c");
-		// Gets table
-		table.append(leftSide[0]);
-		// Gets column
-		int column = Integer.parseInt(leftSide[1]);
-		
-		// Reads the AND table and filters by the predicate
-		Scanner andTableScanner = new Scanner(new File(table.toString() + ".dat"));
-		PrintStream ps = new PrintStream(new File("result" + resultNumber + ".dat"));
-		
-		// Writes the header
-		ps.println(andTableScanner.nextLine());
-		
-		int numOfColumns = countColumns(table.toString() + ".dat");
-		
-		// goes through each row and returns the ones whose predicate is true
-		while (andTableScanner.hasNext()) { 
-			//String row = andTableScanner.nextLine();
-			//String[] rowArray = row.split(" ");
-			int[] tempRow = new int[numOfColumns];
-			for (int i = 0; i < numOfColumns; i++) {
-				tempRow[i] = andTableScanner.nextInt();
-			}
-			
-			//int columnValue = Integer.parseInt(rowArray[column]);
-			int columnValue = tempRow[column];
-			
-			// write row if predicate is true
-			if (determinePredicate(columnValue, benchmark, operator)) {
-				//ps.println(row);
-				for (int i = 0; i < numOfColumns - 1; i++) {
-					ps.print(tempRow[i] + " ");
-				}
-				ps.println(tempRow[numOfColumns - 1]);
-			}
-		}
-		return resultNumber;
-	}
-
-    public void joinTables(String table1, int table1JoinCol, String table2, int table2JoinCol, int resultNumber, boolean noPredicate) throws FileNotFoundException {
-		Scanner t1Scanner = new Scanner(new File(table1));
-		Scanner t2Scanner = new Scanner(new File(table2));
-		
-		// File we're writing to
-		PrintStream ps = new PrintStream(new File("result" + resultNumber + ".dat"));
-		
-		
-		String header1 = t1Scanner.nextLine();
-		String header2 = t2Scanner.nextLine();
-		
-		int table1Cols = header1.split(",").length;
-		int table2Cols = header2.split(",").length;
-		
-		// Writes header of new files
-		ps.print(header1 + ",");
-		ps.println(header2);
-		
-		while (t1Scanner.hasNext()) {
-			// Reads 1 row of table 1
-			int i = 0;
-			int[] t1TempRow = new int[table1Cols];
-			while (i < table1Cols) {
-				t1TempRow[i] = t1Scanner.nextInt();
-				i++;
-			}
-			// READS ALL ROWS OF TABLE 2
-			t2Scanner = new Scanner(new File(table2));
-			// Assuming the first row is the header columns
-			t2Scanner.nextLine();
-			
-			while (t2Scanner.hasNext()) {
-				int j = 0;
-				int[] t2TempRow = new int[table2Cols];
-				while (j < table2Cols) {
-					t2TempRow[j] = t2Scanner.nextInt();
-					j++;
-				}
-				
-				// Checks Predicate
-				if (noPredicate || t1TempRow[table1JoinCol] == t2TempRow[table2JoinCol]) { // if true
-					// Write to new File
-					for (int k = 0; k < t1TempRow.length; k++) {
-						ps.print(t1TempRow[k] + " ");
-					}
-					
-					for (int k = 0; k < t2TempRow.length - 1; k++) {
-						ps.print(t2TempRow[k] + " ");
-					}
-					ps.println(t2TempRow[t2TempRow.length - 1]); // prints the last value with no space
-				}
-			}
-		}
-	}
-
-    public boolean containsTable(String expression, char tableName) {
-		String[] splitExpression = expression.split("=");
-		return splitExpression[0].charAt(0) == tableName || splitExpression[1].charAt(0) == tableName;
-    }
-    
-    public int countColumns(String table) throws FileNotFoundException {
-		Scanner scanner = new Scanner(new File(table));
-		return scanner.nextLine().split(",").length;
-	}
-	
-	public int getColumnNumber(String table, String columnName) throws FileNotFoundException {
-		Scanner scanner = new Scanner(new File(table));
-		String[] columns = scanner.nextLine().split(",");
-		int i = 0;
-		while (i < columns.length) {
-			if (columns[i].equals(columnName)) {
-				return i;
-			}
-			i++;
-		}
-		System.out.println("Shouldn't have got here. Column not found in table. getColumnNumber");
-		return -1;
-	}
-
-    public boolean determinePredicate(int columnValue, int benchmark, int operator) {
-		if (operator == 0) return columnValue == benchmark;
-		if (operator == 1) return columnValue > benchmark;
-		if (operator == 2) return columnValue < benchmark;
-		return false;
-	}
-
-    public void printOutResults(Queue<String> columnsQueue, int resultNumber) throws FileNotFoundException {
-		int columnsQueueSize = columnsQueue.size();
-		
-		// Find SUM and print out result
-		int[] cols = new int[columnsQueueSize]; // Column we are summing
-		int[] colsSum = new int[columnsQueueSize]; // Sum of the columns
-		while (!columnsQueue.isEmpty()) {
-			int index = 0;
-			cols[index] = getColumnNumber("result" + resultNumber + ".dat", columnsQueue.remove());
-			index++;
-		}
-		
-		int numOfColumns = countColumns("result" + resultNumber + ".dat");
-		
-		Scanner sumScanner = new Scanner(new File("result" + resultNumber + ".dat"));
-		
-		// Skips Header
-		sumScanner.nextLine();
-		
-		// goes through each row and sums the rows
-		while (sumScanner.hasNext()) {
-			int[] tempRow = new int[numOfColumns];
-			for (int j = 0; j < numOfColumns; j++) {
-				tempRow[j] = sumScanner.nextInt();
-			}
-			
-			for (int j = 0; j < colsSum.length; j++) {
-				colsSum[j] += tempRow[cols[j]];
-			}
-		}
-		
-		// Prints out the output
-		for (int j = 0; j < colsSum.length - 1; j++) {
-			System.out.print(colsSum[j] + ",");
-		}
-		System.out.println(colsSum[colsSum.length - 1]);
 	}
 }

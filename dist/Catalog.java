@@ -1,38 +1,48 @@
+
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 
 public class Catalog {
-    // Order: min, max, unique
-   // private HashMap<String, int[][]> metaDataMap;
-    private HashMap<String, TableMetaData> metaDataMap;
-
-    // A string (file name) will map to the data
-
-    public Catalog() {
-        metaDataMap = new HashMap<>();
+	
+    private static HashMap<String, TableMetaData> metaDataMap = new HashMap<>();
+    
+    public static DataInputStream openStream(String tableName) throws FileNotFoundException {
+    	return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName)));
     }
 
-    public void addData(String fileName, TableMetaData metadata) {
+    public static void addData(String fileName, TableMetaData metadata) {
         metaDataMap.put(fileName, metadata);
     }
+    
+    public static void removeData(String fileName) {
+    	metaDataMap.remove(fileName);
+    }
 
-    public int getMin(String tableName, int column) {
+    public static int getMin(String tableName, int column) {
         return metaDataMap.get(tableName).getMin(column);
     }
 
-    public int getMax(String tableName, int column) {
+    public static int getMax(String tableName, int column) {
         return metaDataMap.get(tableName).getMax(column);
     }
 
-    public int getUnique(String tableName, int column) {
+    public static int getUnique(String tableName, int column) {
         return metaDataMap.get(tableName).getUnique(column);
     }
 
-    public int getColumns(String tableName) {
+    public static int getColumns(String tableName) {
         return metaDataMap.get(tableName).getColumns();
     }
     
-    public String getColumnNames(String tableName) {
+    public static String getColumnNames(String tableName) {
     	return metaDataMap.get(tableName).getColumnNames();
+    }
+    
+    public static int getRows(String tableName) {
+    	return metaDataMap.get(tableName).getRows();
     }
 
 }

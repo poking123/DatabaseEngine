@@ -1,79 +1,102 @@
-import java.util.Scanner;
+
 import java.util.ArrayList;
-import java.util.Queue;
-import java.util.LinkedList;
+import java.util.Scanner;
 
 public class Parser {
-	
-	private int resultNumber;
-	private Queue<String> columnsQueue; // ex: queue - 1:"D.c0", 2:"D.c4", 3:"C.c1"
-	private ArrayList<String> fromColumns; // ex: ["A", "B", "C", "D"]
-	private ArrayList<String> whereColumns; // ex: ["A.c1=B.c0", " A.c3=D.c0", "C.c2=D.c2"]
-	private ArrayList<String> andColumns; // ex: "[D.c3=-9496]"
+
+	private String selectColumnNames;
+	private ArrayList<Character> fromData;
+	private WhereData whereData;
+	private AndData andData;
 
 	public Parser() {
-		resultNumber = 0;
+		selectColumnNames = "";
+		fromData = new ArrayList<>();
+		whereData = new WhereData();
+		andData = new AndData();
 	}
 
-	public Queue<String> getColumnsQueue() {
-		return this.columnsQueue;
+	public void empty() {
+		selectColumnNames = "";
+		fromData = new ArrayList<>();
+		whereData = new WhereData();
+		andData = new AndData();
+	}
+	
+	public String getSelectColumnNames() {
+		return this.selectColumnNames;
+	}
+	
+	public ArrayList<Character> getFromData() {
+		return this.fromData;
+	}
+	
+	public WhereData getWhereData() {
+		return this.whereData;
+	}
+	
+	public AndData getAndData() {
+		return this.andData;
+	}
+	
+	public void addSelectData(String selectLine) {
+		StringBuilder header = new StringBuilder();
+		int lastOpenParentheses = -1;
+		for (int i = 0; i < selectLine.length(); i++) {
+			char c = selectLine.charAt(i);
+			if (c == '(') {
+				lastOpenParentheses = i;
+			} else if (c == ')') {
+				header.append(selectLine.substring(lastOpenParentheses + 1, i));
+				if (i != selectLine.length() - 1) {
+					header.append(",");
+				}
+			}
+		}
+		selectColumnNames = header.toString();
 	}
 
-	public ArrayList<String> getFromColumns() {
-		return this.fromColumns;
-	}
-
-	public ArrayList<String> getWhereColumns() {
-		return this.whereColumns;
-	}
-
-	public ArrayList<String> getAndColumns() {
-		return this.andColumns;
+	public void addFromData(ArrayList<Character> fromData, String fromLine) {
+		for (int i = 0; i < fromLine.length(); i++) {
+			char c = fromLine.charAt(i);
+			if (c == ' ') {
+				char tableName = fromLine.charAt(i + 1);
+				fromData.add(tableName);
+			}
+		}
 	}
 
 	public void readQuery(Scanner queryScanner) {
-
-		columnsQueue = new LinkedList<>(); // ex: queue - 1:"D.c0", 2:"D.c4", 3:"C.c1"
-		fromColumns = new ArrayList<>(); // ex: ["A", "B", "C", "D"]
-		whereColumns = new ArrayList<>(); // ex: ["A.c1=B.c0", " A.c3=D.c0", "C.c2=D.c2"]
-		andColumns = new ArrayList<>(); // ex: "[D.c3=-9496]"
-
 		// Get SELECT line
 		// Figure out which column from which table we are summing (looking for)
 		// Saves the table and column name (in the right order)
-		queryScanner.next();
-		String selectLine = queryScanner.nextLine().replaceAll(" ", "");
-		String[] selectColumns = selectLine.split(",");
-		for (int i = 0; i < selectColumns.length; i++) {
-			String col = selectColumns[i].trim();
-			columnsQueue.add(col.substring(4, 8)); 
-		}
+		
+		String selectLine = queryScanner.nextLine();
+		
+		addSelectData(selectLine);
+
 		
 		// Get FROM line
-		queryScanner.next();
-		String fromLine = queryScanner.nextLine().replaceAll(" ", "");
-		arrayToList(fromLine.split(","), fromColumns);
+		String fromLine = queryScanner.nextLine();
+		
+		addFromData(fromData, fromLine);
+
 		
 		// Get WHERE line
-		queryScanner.next();
-		String whereLine = queryScanner.nextLine().replaceAll(" ", "");
-		arrayToList(whereLine.split("AND"), whereColumns);
+		String whereLine = queryScanner.nextLine();
+		
+		whereData.addWhereData(whereLine);
 		
 		
 		// Get AND line
-		queryScanner.next();
-		String andLine = queryScanner.nextLine().replaceAll(" ", "");
-		arrayToList(andLine.split(";"), andColumns);		
+		String andLine = queryScanner.nextLine();
+		andLine = andLine.substring(0, andLine.length() - 1); // removes the semicolon at the end
+		
+		andData.addAndData(andLine);
 	}
 
 	public int getNumOfQueries(Scanner queryScanner) {
-		return 1;
-		// return queryScanner.nextInt();
-	}
-	
-	public void arrayToList(String[] stringArr, ArrayList<String> stringList) {
-		for (String s : stringArr) {
-			stringList.add(s);
-		}
+		return 31;
+		//return queryScanner.nextInt();
 	}
 }

@@ -1,29 +1,19 @@
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.DataOutputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.FileReader;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.EOFException;
 import java.nio.CharBuffer;
 
 public class Loader {
 
-	private Catalog catalog;
-
 	public Loader() {
-		catalog = new Catalog();
-	}
-
-	public Catalog getCatalog() {
-		return this.catalog;
 	}
 
 	public void readAllCSVFiles(String allFiles) throws FileNotFoundException, IOException {
@@ -124,22 +114,25 @@ public class Loader {
 		for (int i = 0; i < numOfCols - 1; i++) {
 			sb.append(tableName + ".c" + i + ",");
 		}
-		sb.append(tableName + ".c" + (numOfCols - 1) + ",");
+		sb.append(tableName + ".c" + (numOfCols - 1));
 		String columnNames = sb.toString();
 		
 		// Adds the meta data to TableMetaData
 		// Then add TableMetaData to the catalog
-		TableMetaData tmd = new TableMetaData(numOfCols, index / numOfCols, columnNames);
+		TableMetaData tmd = new TableMetaData(columnNames);
+		tmd.setRows(index / numOfCols);
+		tmd.setColumns(numOfCols);
 		tmd.setMin(minArray);
 		tmd.setMax(maxArray);
 		tmd.setUnique(uniqueArray);
-		catalog.addData(tableName, tmd);
+		Catalog.addData(tableName + ".dat", tmd);
 	}
 	
 	// returns the String of CSV files
 	public String getCSVFiles() {
 		// Get the CSV files
 		Scanner scanner = new Scanner(System.in);
+		scanner.close();
 		return scanner.nextLine();
 	}
 }

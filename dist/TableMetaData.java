@@ -1,3 +1,4 @@
+
 public class TableMetaData {
     // Keeps the number of columns
     // And the min, max, and unique for each column
@@ -9,17 +10,25 @@ public class TableMetaData {
     private String columnNames;
     
 
-    public TableMetaData(int columns, int rows, String columnNames) {
-        this.columns = columns;
-        this.rows = rows;
+    public TableMetaData(String columnNames) {
+        this.columns = 0;
+        this.rows = 0;
         min = new int[columns];
         max = new int[columns];
         unique = new int[columns];
         this.columnNames = columnNames;
     }
     
+    public void setColumns(int columns) {
+    	this.columns = columns;
+    }
+    
     public int getColumns() {
         return this.columns;
+    }
+    
+    public void setRows(int rows) {
+    	this.rows = rows;
     }
     
     public int getRows() {
@@ -48,10 +57,6 @@ public class TableMetaData {
 
     public int getUnique(int column) {
         return this.unique[column];
-    }
-
-    public void setColumns(int columns) {
-        this.columns = columns;
     }
     
     public String getColumnNames() {
