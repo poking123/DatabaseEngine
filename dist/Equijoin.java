@@ -20,16 +20,18 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 	
 	@Override
 	public Iterator<List<int[]>> iterator() {
-		return new EquijoinIterator(source1.iterator(), source2);
+		return new EquijoinIterator(source1.iterator(), source2, equijoinPredicate.isTwoTableJoin());
 	}
 
 	public class EquijoinIterator implements Iterator<List<int[]>> {
 		private Iterator<List<int[]>> source1Iterator;
 		private Iterable<List<int[]>> source2;
+		private boolean isTwoTableJoin;
 		
-		public EquijoinIterator(Iterator<List<int[]>> source1Iterator, Iterable<List<int[]>> source2) {
+		public EquijoinIterator(Iterator<List<int[]>> source1Iterator, Iterable<List<int[]>> source2, boolean isTwoTableJoin) {
 			this.source1Iterator = source1Iterator;
 			this.source2 = source2;
+			this.isTwoTableJoin = isTwoTableJoin;
 		}
 		
 		@Override
@@ -47,24 +49,30 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 			if (input.isEmpty()) {
 				return rowsToReturn;
 			} else {
-				
-				
-				for (int[] table1Row : input) {
-					// for (int i : table1Row) {
-					// 	System.out.print(i + " ");
-					// }	
-					// System.out.println();
-					Iterator<List<int[]>> table2RowBlocks = source2.iterator();
-					while (table2RowBlocks.hasNext()) {
-						List<int[]> table2RowBlock = table2RowBlocks.next();
-						for (int[] table2Row : table2RowBlock) {
-							if (equijoinPredicate.test(table1Row, table2Row)) {
-								rowsToReturn.add(combineRows(table1Row, table2Row));
-							}	
+
+				// BIG IF - Two table equijoin (tables are merged)
+				if (this.isTwoTableJoin) {
+					for (int[] table1Row : input) {
+						Iterator<List<int[]>> table2RowBlocks = source2.iterator();
+						while (table2RowBlocks.hasNext()) {
+							List<int[]> table2RowBlock = table2RowBlocks.next();
+							for (int[] table2Row : table2RowBlock) {
+								if (equijoinPredicate.test(table1Row, table2Row)) {
+									rowsToReturn.add(combineRows(table1Row, table2Row));
+								}	
+							}
 						}
 					}
+					return rowsToReturn;
+				} else { // is one table join - we only scan table 1 because table 2's headers are already in table 1
+					for (int[] table1Row : input) {
+						if (equijoinPredicate.test(table1Row)) {
+							rowsToReturn.add(table1Row);
+						}
+					}
+					return rowsToReturn;
 				}
-				return rowsToReturn;
+				
 			}
 			
 		}

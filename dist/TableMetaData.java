@@ -7,16 +7,16 @@ public class TableMetaData {
     private int[] min;
     private int[] max;
     private int[] unique;
-    private String columnNames;
+    private String header;
     
 
-    public TableMetaData(String columnNames) {
+    public TableMetaData(String header) {
         this.columns = 0;
         this.rows = 0;
         min = new int[columns];
         max = new int[columns];
         unique = new int[columns];
-        this.columnNames = columnNames;
+        this.header = header;
     }
     
     public void setColumns(int columns) {
@@ -64,7 +64,7 @@ public class TableMetaData {
     }
     
     public String getColumnNames() {
-        return this.columnNames;
+        return this.header;
     }
 
 

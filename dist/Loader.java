@@ -110,6 +110,7 @@ public class Loader {
 		int[] uniqueArray = new int[numOfCols];
 		for (int i = 0; i < numOfCols; i++) uniqueArray[i] = uniqueSetArray.get(i).size();
 
+		
 		// Makes header with all the column names
 		for (int i = 0; i < numOfCols - 1; i++) {
 			sb.append(tableName + ".c" + i + ",");

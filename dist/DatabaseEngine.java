@@ -6,6 +6,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
+import java.util.Deque;
+import java.util.ArrayDeque;
+import java.util.LinkedList;
+import java.util.Queue;
+
 
 public class DatabaseEngine {
 
@@ -16,17 +21,17 @@ public class DatabaseEngine {
 		
 		// Get the CSV files
 		//String CSVFiles = loader.getCSVFiles();
-		String CSVFiles = "../../data/xxxs\\B.csv,../../data/xxxs\\C.csv,../../data/xxxs\\A.csv,../../data/xxxs\\D.csv,../../data/xxxs\\E.csv";
+		//String CSVFiles = "../../data/xxxs\\B.csv,../../data/xxxs\\C.csv,../../data/xxxs\\A.csv,../../data/xxxs\\D.csv,../../data/xxxs\\E.csv";
 		//String CSVFiles = "../../data/xxs\\B.csv,../../data/xxs\\C.csv,../../data/xxs\\A.csv,../../data/xxs\\D.csv,../../data/xxs\\E.csv,../../data/xxs\\F.csv";
-		//String CSVFiles = "../../data/xs\\B.csv,../../data/xs\\C.csv,../../data/xs\\A.csv,../../data/xs\\D.csv,../../data/xs\\E.csv,../../data/xs\\F.csv";
+		String CSVFiles = "../../data/xs\\B.csv,../../data/xs\\C.csv,../../data/xs\\A.csv,../../data/xs\\D.csv,../../data/xs\\E.csv,../../data/xs\\F.csv";
 
 		// Loader loads all the data into storage
 		loader.readAllCSVFiles(CSVFiles);
 		
 		
 		//////////////////////////////////
-		Scan scanA = new Scan("A.dat");
-		Scan scanB = new Scan("B.dat");
+		// Scan scanA = new Scan("A.dat");
+		// Scan scanB = new Scan("B.dat");
 
 		// EquijoinPredicate ep = new EquijoinPredicate(1, 0);
 		// Equijoin equijoin = new Equijoin(scanA, scanB, ep);
@@ -73,7 +78,7 @@ public class DatabaseEngine {
 //			}
 //		}
 
-		System.exit(0);
+		//System.exit(0);
 		////////////////////////////////////////
 		
 		// PARSER
@@ -84,6 +89,40 @@ public class DatabaseEngine {
 		
 		// EXECUTION ENGINE
 		ExecutionEngine executionEngine = new ExecutionEngine();
+
+		///////////////////////////////////////////////////////////////////
+
+		// Representation of the first query from the xs dataset
+
+		// Deque<RAOperation> tableDeque = new ArrayDeque<>();
+		// Scan scanA = new Scan("A.dat");
+		// Scan scanC = new Scan("C.dat");
+		// Scan scanB = new Scan("B.dat");
+		// Scan scanD = new Scan("D.dat");
+
+		// tableDeque.push(scanD);
+		// tableDeque.push(scanB);
+		// tableDeque.push(scanC);
+		// tableDeque.push(scanA);
+
+		// Queue<Predicate> predicateQueue = new LinkedList<>();
+		// ArrayList<int[]> AList = new ArrayList<>();
+		// int[] aPred = {29, 0, 5376};
+		// AList.add(aPred);
+		// Predicate sigmaA = new FilterPredicate(AList);
+		
+		// Predicate caE = new EquijoinPredicate(2, 0);
+		// Predicate bE = new EquijoinPredicate(1, 0);
+		// Predicate dE = new EquijoinPredicate(3, 0);
+		
+		// predicateQueue.add(sigmaA);
+		// predicateQueue.add(caE);
+		// predicateQueue.add(bE);
+		// predicateQueue.add(dE);
+
+		// executionEngine.executeQuery(tableDeque, predicateQueue);
+		// System.exit(0);
+		///////////////////////////////////////////////////////////////////
 
 		//Scanner queryScanner = new Scanner(System.in);
 		Scanner queryScanner = new Scanner(new File("../../data/xs\\queries.sql"));
@@ -96,7 +135,7 @@ public class DatabaseEngine {
 			parser.readQuery(queryScanner);
 			queryScanner.nextLine(); // Blank Line
 			
-			//optimizer.optimizeQuery(parser.getFromData(), parser.getWhereData(), parser.getAndData());
+			optimizer.optimizeQuery(parser.getFromData(), parser.getWhereData(), parser.getAndData());
 			
 			// AndData
 			HashMap<Character, ArrayList<int[]>> tablePredicateMap = parser.getAndData().getTablePredicateMap(); // tableName -> predicate data

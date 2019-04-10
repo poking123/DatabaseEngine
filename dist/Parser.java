@@ -5,20 +5,20 @@ import java.util.Scanner;
 public class Parser {
 
 	private String selectColumnNames;
-	private ArrayList<Character> fromData;
+	private StringBuilder fromData;
 	private WhereData whereData;
 	private AndData andData;
 
 	public Parser() {
 		selectColumnNames = "";
-		fromData = new ArrayList<>();
+		fromData = new StringBuilder();
 		whereData = new WhereData();
 		andData = new AndData();
 	}
 
 	public void empty() {
 		selectColumnNames = "";
-		fromData = new ArrayList<>();
+		fromData = new StringBuilder();
 		whereData = new WhereData();
 		andData = new AndData();
 	}
@@ -27,8 +27,8 @@ public class Parser {
 		return this.selectColumnNames;
 	}
 	
-	public ArrayList<Character> getFromData() {
-		return this.fromData;
+	public String getFromData() {
+		return this.fromData.toString();
 	}
 	
 	public WhereData getWhereData() {
@@ -56,12 +56,12 @@ public class Parser {
 		selectColumnNames = header.toString();
 	}
 
-	public void addFromData(ArrayList<Character> fromData, String fromLine) {
+	public void addFromData(StringBuilder fromData, String fromLine) {
 		for (int i = 0; i < fromLine.length(); i++) {
 			char c = fromLine.charAt(i);
 			if (c == ' ') {
 				char tableName = fromLine.charAt(i + 1);
-				fromData.add(tableName);
+				fromData.append(tableName);
 			}
 		}
 	}

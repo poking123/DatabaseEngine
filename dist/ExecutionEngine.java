@@ -33,7 +33,7 @@ public class ExecutionEngine {
 		finalDeque = new ArrayDeque<>();
 	}
 	
-	public void executeQuery(Deque<RAOperation> tableDeque, Queue<Predicate> predicateQueue) {
+	public void executeQuery(Deque<RAOperation> tableDeque, Queue<Predicate> predicateQueue, int[] columnsToSum) {
 		Queue<RAOperation> resultQueue = new LinkedList<>();
 		
 		while (!predicateQueue.isEmpty()) {
@@ -58,6 +58,14 @@ public class ExecutionEngine {
 					break;
 			}
 		}
+		
+		RAOperation finalOperation = resultQueue.remove(); // should only have 1 operation left in the queue
+		//columnsToSum = new int[]{62, 29, 51};
+		ProjectAndSum pas = new ProjectAndSum(finalOperation.iterator(), columnsToSum);
+		while (pas.hasNext()) {
+			pas.next();
+		}
+		System.out.println(pas.getSumString());
 	}
 	
 	public void executeQuery(String selectColumnNames, HashMap<Character, ArrayList<int[]>> tablePredicateMap, HashMap<Character, Queue<String[]>> predicateJoinQueueMap, Deque<String[]> disjointDeque) throws IOException {
