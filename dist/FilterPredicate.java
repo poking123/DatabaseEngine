@@ -9,6 +9,10 @@ public class FilterPredicate extends Predicate {
 		this.predicates = predicates;
 		this.type = "filterPredicate";
 	}
+
+	public String toString() {
+		return this.type;
+	}
 	
 	@Override
 	String getType() {

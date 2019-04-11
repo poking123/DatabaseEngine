@@ -15,6 +15,10 @@ public class Scan extends RAOperation implements Iterable<List<int[]>> {
 	public Scan(String tableName) throws FileNotFoundException {
 		this.tableName = tableName;
 	}
+
+	public String toString() {
+		return "Scan " + tableName;
+	}
 	
 	public String getType() {
 		return "scan";
@@ -32,7 +36,7 @@ public class Scan extends RAOperation implements Iterable<List<int[]>> {
 	
 	public class ScanIterator implements Iterator<List<int[]>> {
 			
-			private final int bufferSize = 1000;
+			private final int bufferSize = 10000;
 			
 			private final DataInputStream dis;
 			private final int numCols;

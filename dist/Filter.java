@@ -50,6 +50,14 @@ public class Filter extends RAOperation {
 						rowsToReturn.add(row);
 					}	
 				}
+				// for (int[] row : rowsToReturn) {
+				// 	for (int i : row) {
+				// 		System.out.print(i + " ");
+				// 	}
+					
+				// 	System.out.println();
+				// }
+				// System.out.println();
 				return rowsToReturn;
 			}
 		}

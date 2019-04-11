@@ -20,6 +20,10 @@ public class EquijoinPredicate extends Predicate{
 		this.isTwoTableJoin = isTwoTableJoin;
 		this.type = type;
 	}
+
+	public String toString() {
+		return this.type + " - JoinCols: " + table1JoinCol + " " + table2JoinCol;
+	}
 	
 	@Override
 	String getType() {

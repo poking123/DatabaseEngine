@@ -496,9 +496,9 @@ public class Optimizer {
 		
 		HashMap<Character, ArrayList<int[]>> tablePredicateMap = andData.getTablePredicateMap();
 
-		System.out.println("columnNames is " + columnNames);
-		System.out.println("fromData is " + fromData);
-		System.out.println("tablePredicateMap is " + tablePredicateMap);
+		// System.out.println("columnNames is " + columnNames);
+		// System.out.println("fromData is " + fromData);
+		// System.out.println("tablePredicateMap is " + tablePredicateMap);
 		
 		Queue<RAOperation> tableQueue = new LinkedList<>();
 		Queue<Predicate> predicateQueue = new LinkedList<>();
@@ -514,20 +514,46 @@ public class Optimizer {
 		Iterator<Character> joinedTablesItr = joinedTables.iterator();
 		// only two tables
 		char firstTable = joinedTablesItr.next();
-		char secondTable = joinedTablesItr.next();
+		char secondTable = joinedTablesItr.next();		
 		
-		// Adds tables to predicateQueue
-		tableQueue.add(new Scan(firstTable + ".dat"));
-		tableQueue.add(new Scan(secondTable + ".dat"));
-		
-		// Check for predicates and adds to predicateQueue
-		if (tablePredicateMap.containsKey(firstTable)) {
+
+		boolean predicateMapContainsFirstTable = tablePredicateMap.containsKey(firstTable);
+		boolean predicateMapContainsSecondTable = tablePredicateMap.containsKey(secondTable);
+
+		if (predicateMapContainsFirstTable && predicateMapContainsSecondTable) {
+			// add both tables and preserve their order
+			// add table1
 			ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
+			tableQueue.add(new Scan(firstTable + ".dat"));
 			predicateQueue.add(new FilterPredicate(predData));
-		}
-		if (tablePredicateMap.containsKey(secondTable)) {
-			ArrayList<int[]> predData = tablePredicateMap.get(secondTable);
+			// add table2
+			predData = tablePredicateMap.get(secondTable);
+			tableQueue.add(new Scan(secondTable + ".dat"));
 			predicateQueue.add(new FilterPredicate(predData));
+		} else if (predicateMapContainsFirstTable) {
+			// order is preserved
+			// add first table
+			ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
+			tableQueue.add(new Scan(firstTable + ".dat"));
+			predicateQueue.add(new FilterPredicate(predData));
+			// add second table (no predicate)
+			tableQueue.add(new Scan(secondTable + ".dat"));
+		} else if (predicateMapContainsSecondTable) {
+			// switch order 
+			char temp = firstTable;
+			firstTable = secondTable;
+			secondTable = temp;
+			// add first table
+			ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
+			tableQueue.add(new Scan(firstTable + ".dat"));
+			predicateQueue.add(new FilterPredicate(predData));
+			// add second table (no predicate)
+			tableQueue.add(new Scan(secondTable + ".dat"));
+		} else { // neither table has a predicate
+			// just add both tables
+			tableQueue.add(new Scan(firstTable + ".dat"));
+			tableQueue.add(new Scan(secondTable + ".dat"));
+
 		}
 		
 		String firstJoinColumn = firstJoin.get(firstTable);
@@ -554,8 +580,8 @@ public class Optimizer {
 			int beforeSize = joinedTables.size();
 			Iterator<HashMap<Character, String>> whereTablesItr = whereTables.iterator();
 			while (whereTablesItr.hasNext()) {
-				System.out.println("In Where Tables");
-				System.out.println("whereTables is " + whereTables);
+				// System.out.println("In Where Tables");
+				// System.out.println("whereTables is " + whereTables);
 				HashMap<Character, String> tempMap = whereTablesItr.next();
 				HashSet<Character> tablesCharSet = new HashSet<>(tempMap.keySet());
 				
@@ -574,7 +600,7 @@ public class Optimizer {
 				boolean containsTable1 = joinedTables.contains(tempTable1);
 				boolean containsTable2 = joinedTables.contains(tempTable2);
 				if (containsTable1 && containsTable2) {
-					System.out.println("Contains both");
+					// System.out.println("Contains both");
 					// add fake table to tableQueue
 					tableQueue.add(new Scan("FakeTable"));
 					// add one table equijoin to predicateQueue
@@ -583,7 +609,7 @@ public class Optimizer {
 					predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, false));
 					whereTablesItr.remove();
 				} else if (containsTable1) { // contains table1, but not table2
-					System.out.println("contains table 1");
+					// System.out.println("contains table 1");
 					// adds table2 to joinedTables
 					joinedTables.add(tempTable2);
 					// adds table2 to tableQueue
@@ -605,7 +631,7 @@ public class Optimizer {
 					predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, true));
 					whereTablesItr.remove();
 				} else if (containsTable2) {
-					System.out.println("contains table 2");
+					// System.out.println("contains table 2");
 					// adds table1 to joinedTables
 					joinedTables.add(tempTable1);
 					// adds table1 to tableQueue
@@ -669,14 +695,43 @@ public class Optimizer {
 				firstTableJoinCol = findIndex(firstHeader.split(","), firstJoinColumn);
 				secondTableJoinCol = findIndex(secondHeader.split(","), secondJoinColumn);
 				
-				// Check for predicates and adds to predicateQueue
-				if (tablePredicateMap.containsKey(firstTable)) {
+				predicateMapContainsFirstTable = tablePredicateMap.containsKey(firstTable);
+				predicateMapContainsSecondTable = tablePredicateMap.containsKey(secondTable);
+
+				if (predicateMapContainsFirstTable && predicateMapContainsSecondTable) {
+					// add both tables and preserve their order
+					// add table1
 					ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
+					tableQueue.add(new Scan(firstTable + ".dat"));
 					predicateQueue.add(new FilterPredicate(predData));
-				}
-				if (tablePredicateMap.containsKey(secondTable)) {
-					ArrayList<int[]> predData = tablePredicateMap.get(secondTable);
+					// add table2
+					predData = tablePredicateMap.get(secondTable);
+					tableQueue.add(new Scan(secondTable + ".dat"));
 					predicateQueue.add(new FilterPredicate(predData));
+				} else if (predicateMapContainsFirstTable) {
+					// order is preserved
+					// add first table
+					ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
+					tableQueue.add(new Scan(firstTable + ".dat"));
+					predicateQueue.add(new FilterPredicate(predData));
+					// add second table (no predicate)
+					tableQueue.add(new Scan(secondTable + ".dat"));
+				} else if (predicateMapContainsSecondTable) {
+					// switch order 
+					char temp = firstTable;
+					firstTable = secondTable;
+					secondTable = temp;
+					// add first table
+					ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
+					tableQueue.add(new Scan(firstTable + ".dat"));
+					predicateQueue.add(new FilterPredicate(predData));
+					// add second table (no predicate)
+					tableQueue.add(new Scan(secondTable + ".dat"));
+				} else { // neither table has a predicate
+					// just add both tables
+					tableQueue.add(new Scan(firstTable + ".dat"));
+					tableQueue.add(new Scan(secondTable + ".dat"));
+
 				}
 				
 				// Adds equijoin to predicateQueue
@@ -703,9 +758,9 @@ public class Optimizer {
 		}
 		
 		
-		System.out.println("Overall Header:");
-		System.out.println(overallHeader.toString());
-		System.out.println();
+		// System.out.println("Overall Header:");
+		// System.out.println(overallHeader.toString());
+		// System.out.println();
 		String[] overallHeaderArr = overallHeader.toString().split(",");
 		String[] columnNamesArr = columnNames.split(",");
 		columnsToSum = new int[columnNamesArr.length];

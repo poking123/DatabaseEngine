@@ -44,10 +44,10 @@ public class ExecutionEngine {
 			Deque<RAOperation> resultQueue = new ArrayDeque<>();
 			
 			while (!predicateQueue.isEmpty()) {
-				System.out.println("tableQueue: " + tableQueue);
-				System.out.println("predicateQueue: " + predicateQueue);
-				System.out.println("resultQueue: " + resultQueue);
-				System.out.println();
+				// System.out.println("tableQueue: " + tableQueue);
+				// System.out.println("predicateQueue: " + predicateQueue);
+				// System.out.println("resultQueue: " + resultQueue);
+				// System.out.println();
 				Predicate currentPredicate = predicateQueue.remove();
 				switch (currentPredicate.getType()) {
 					case "filterPredicate": // take off from deque, filter, and put on result queue
@@ -60,12 +60,12 @@ public class ExecutionEngine {
 					case "equijoinPredicate": 
 						// makes sure result queue size is 2
 						while (resultQueue.size() < 2) {
-							resultQueue.push(tableQueue.remove());
+							resultQueue.add(tableQueue.remove());
 						}
 						
 						EquijoinPredicate ep = (EquijoinPredicate) currentPredicate;
-						RAOperation table2 = resultQueue.pop();
-						RAOperation table1 = resultQueue.pop();
+						RAOperation table1 = resultQueue.remove();
+						RAOperation table2 = resultQueue.remove();
 						Equijoin equijoin = new Equijoin(table1, table2, ep);
 						resultQueue.add(equijoin); // adds result to result queue
 						break;
@@ -93,10 +93,9 @@ public class ExecutionEngine {
 			finalDeque.addFirst(disjointEquijoin);
 		}
 		
-		System.out.println("finalDeque: " + finalDeque);
+		// System.out.println("finalDeque: " + finalDeque);
 		RAOperation finalOperation = finalDeque.pop(); // should only have 1 operation left in the queue
-		System.out.println("finalDeque: " + finalDeque);
-		//columnsToSum = new int[]{62, 29, 51};
+		// System.out.println("finalDeque: " + finalDeque);
 		ProjectAndSum pas = new ProjectAndSum(finalOperation.iterator(), columnsToSum);
 		while (pas.hasNext()) {
 			pas.next();

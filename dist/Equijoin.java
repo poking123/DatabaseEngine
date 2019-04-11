@@ -71,10 +71,14 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 							}
 						}
 					}
-					for (int[] row : rowsToReturn) {
-						for (int i : row) {
-						}
-					}
+					// for (int[] row : rowsToReturn) {
+					// 	for (int i : row) {
+					// 		System.out.print(i + " ");
+					// 	}
+					// 	System.out.println();
+						
+					// }
+					// System.out.println();
 					return rowsToReturn;
 				} else { // is one table join - we only scan table 1 because table 2's headers are already in table 1
 					for (int[] table1Row : input) {
