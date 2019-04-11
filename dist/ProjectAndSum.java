@@ -9,11 +9,16 @@ public class ProjectAndSum implements Iterator<List<int[]>>{
 	public ProjectAndSum(Iterator<List<int[]>> input, int[] colsToSum) {
 		this.source = input;
 		this.colsToSum = colsToSum;
-		sums = new int[colsToSum.length];
+		this.sums = new int[colsToSum.length];
+		System.out.println("Look Here");
+		for (int i : colsToSum)
+			System.out.print(i + " ");
+		System.out.println();
 	}
 	
 	@Override
 	public boolean hasNext() {
+		System.out.println("proehct and sum hasNext() called");
 		return source.hasNext();
 	}
 
@@ -24,7 +29,8 @@ public class ProjectAndSum implements Iterator<List<int[]>>{
 		for (int[] row : input) {
 			for (int i = 0; i < colsToSum.length; i++) {
 				int keepIndex = colsToSum[i];
-				sums[i] += row[keepIndex];
+				this.sums[i] += row[keepIndex];
+				System.out.println("Currently adding sums");
 			}
 		}
 		return null;

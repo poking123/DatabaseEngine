@@ -21,9 +21,9 @@ public class DatabaseEngine {
 		
 		// Get the CSV files
 		//String CSVFiles = loader.getCSVFiles();
-		//String CSVFiles = "../../data/xxxs\\B.csv,../../data/xxxs\\C.csv,../../data/xxxs\\A.csv,../../data/xxxs\\D.csv,../../data/xxxs\\E.csv";
+		String CSVFiles = "../../data/xxxs\\B.csv,../../data/xxxs\\C.csv,../../data/xxxs\\A.csv,../../data/xxxs\\D.csv,../../data/xxxs\\E.csv";
 		//String CSVFiles = "../../data/xxs\\B.csv,../../data/xxs\\C.csv,../../data/xxs\\A.csv,../../data/xxs\\D.csv,../../data/xxs\\E.csv,../../data/xxs\\F.csv";
-		String CSVFiles = "../../data/xs\\B.csv,../../data/xs\\C.csv,../../data/xs\\A.csv,../../data/xs\\D.csv,../../data/xs\\E.csv,../../data/xs\\F.csv";
+		//String CSVFiles = "../../data/xs\\B.csv,../../data/xs\\C.csv,../../data/xs\\A.csv,../../data/xs\\D.csv,../../data/xs\\E.csv,../../data/xs\\F.csv";
 
 		// Loader loads all the data into storage
 		loader.readAllCSVFiles(CSVFiles);
@@ -92,40 +92,53 @@ public class DatabaseEngine {
 
 		///////////////////////////////////////////////////////////////////
 
-		// Representation of the first query from the xs dataset
+		// Representation of the first query from the xxxs dataset
+		Queue<Queue<RAOperation>> tablesQueue = new LinkedList<>();
+		Queue<Queue<Predicate>> predicatesQueue = new LinkedList<>();
 
-		// Deque<RAOperation> tableDeque = new ArrayDeque<>();
-		// Scan scanA = new Scan("A.dat");
-		// Scan scanC = new Scan("C.dat");
-		// Scan scanB = new Scan("B.dat");
-		// Scan scanD = new Scan("D.dat");
 
-		// tableDeque.push(scanD);
-		// tableDeque.push(scanB);
-		// tableDeque.push(scanC);
-		// tableDeque.push(scanA);
+		Queue<RAOperation> tableQueue = new LinkedList<>();
+		RAOperation scanA = new Scan("A.dat");
+		RAOperation scanC = new Scan("C.dat");
+		RAOperation scanB = new Scan("B.dat");
+		RAOperation scanD = new Scan("D.dat");
 
-		// Queue<Predicate> predicateQueue = new LinkedList<>();
-		// ArrayList<int[]> AList = new ArrayList<>();
-		// int[] aPred = {29, 0, 5376};
-		// AList.add(aPred);
-		// Predicate sigmaA = new FilterPredicate(AList);
+		tableQueue.add(scanA);
+		tableQueue.add(scanB);
+		tableQueue.add(scanD);
+		// tableQueue.add(scanC);
+
+		Queue<Predicate> predicateQueue = new LinkedList<>();
+
+		Predicate abE = new EquijoinPredicate(1, 0, true);
+		Predicate dE = new EquijoinPredicate(3, 0, true);
 		
-		// Predicate caE = new EquijoinPredicate(2, 0);
-		// Predicate bE = new EquijoinPredicate(1, 0);
-		// Predicate dE = new EquijoinPredicate(3, 0);
-		
-		// predicateQueue.add(sigmaA);
-		// predicateQueue.add(caE);
-		// predicateQueue.add(bE);
-		// predicateQueue.add(dE);
 
-		// executionEngine.executeQuery(tableDeque, predicateQueue);
-		// System.exit(0);
+		ArrayList<int[]> DList = new ArrayList<>();
+		int[] dPred = {3, 0, -9496};
+		DList.add(dPred);
+		Predicate sigmaD = new FilterPredicate(DList);
+		
+		Predicate dC = new EquijoinPredicate(15, 2, true);
+		
+		predicateQueue.add(abE);
+		predicateQueue.add(sigmaD);
+		predicateQueue.add(dE);
+		// predicateQueue.add(dC);
+
+		tablesQueue.add(tableQueue);
+		predicatesQueue.add(predicateQueue);
+
+		Queue<Predicate> finalPredicateQueue = new LinkedList<>();
+		//columns to sum
+		// 15,19,21
+		// int[] colsToSum = {15, 19, 21};
+		executionEngine.executeQuery(tablesQueue, predicatesQueue, finalPredicateQueue, new int[]{0, 1, 2});
+		System.exit(0);
 		///////////////////////////////////////////////////////////////////
 
 		//Scanner queryScanner = new Scanner(System.in);
-		Scanner queryScanner = new Scanner(new File("../../data/xs\\queries.sql"));
+		Scanner queryScanner = new Scanner(new File("../../data/xxxs\\queryTest.sql"));
 
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(queryScanner);
@@ -135,13 +148,10 @@ public class DatabaseEngine {
 			parser.readQuery(queryScanner);
 			queryScanner.nextLine(); // Blank Line
 			
-			optimizer.optimizeQuery(parser.getFromData(), parser.getWhereData(), parser.getAndData());
-			
-			// AndData
-			HashMap<Character, ArrayList<int[]>> tablePredicateMap = parser.getAndData().getTablePredicateMap(); // tableName -> predicate data
+			optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 			
 			// Execute Query
-			executionEngine.executeQuery(parser.getSelectColumnNames(), tablePredicateMap, optimizer.getPredicateJoinQueueMap(), optimizer.getDisjointDeque());
+			executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum());
 
 			// Gets rid of all the data in the parser
 			parser.empty();
@@ -149,12 +159,10 @@ public class DatabaseEngine {
 		// Last Query
 		parser.readQuery(queryScanner);
 
-		optimizer.optimizeQuery(parser.getFromData(), parser.getWhereData(), parser.getAndData());
-			
-		HashMap<Character, ArrayList<int[]>> tablePredicateMap = parser.getAndData().getTablePredicateMap(); // tableName -> predicate data
+		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		
 		// Execute Query
-		executionEngine.executeQuery(parser.getSelectColumnNames(), tablePredicateMap, optimizer.getPredicateJoinQueueMap(), optimizer.getDisjointDeque());
+		executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum());
 		
 	}
 }

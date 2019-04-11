@@ -2,14 +2,17 @@ import java.util.List;
 
 public class FilterPredicate extends Predicate {
 	private List<int[]> predicates;
+
+	private String type;
 	
 	public FilterPredicate(List<int[]> predicates) {
 		this.predicates = predicates;
+		this.type = "filterPredicate";
 	}
 	
 	@Override
 	String getType() {
-		return "filterPredicate";
+		return this.type;
 	}
 	
 	public boolean test(int[] row) {

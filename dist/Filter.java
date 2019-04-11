@@ -6,14 +6,17 @@ import java.util.List;
 public class Filter extends RAOperation {
 	private Iterable<List<int[]>> source;
 	private FilterPredicate predicate;
+
+	private String type;
 	
 	public Filter(RAOperation input, FilterPredicate p) {
 		this.source = input;
 		this.predicate = p;
+		this.type = "filter";
 	}
 	
-	public String getType() {
-		return "filter";
+	String getType() {
+		return this.type;
 	}
 	
 	@Override

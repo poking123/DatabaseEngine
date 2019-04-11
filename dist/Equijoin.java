@@ -5,6 +5,7 @@ import java.util.List;
 public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 	private Iterable<List<int[]>> source1;
 	private Iterable<List<int[]>> source2;
+	private String type;
 	
 	private EquijoinPredicate equijoinPredicate;
 
@@ -12,10 +13,18 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 		this.source1 = source1;
 		this.source2 = source2;
 		this.equijoinPredicate = equijoinPredicate;
+		this.type = "equijoin";
+	}
+
+	public Equijoin(RAOperation source1, RAOperation source2, EquijoinPredicate equijoinPredicate, String type) {
+		this.source1 = source1;
+		this.source2 = source2;
+		this.equijoinPredicate = equijoinPredicate;
+		this.type = "disjointEquijoin";
 	}
 	
 	String getType() {
-		return "equijoin";
+		return this.type;
 	}
 	
 	@Override
@@ -49,7 +58,6 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 			if (input.isEmpty()) {
 				return rowsToReturn;
 			} else {
-
 				// BIG IF - Two table equijoin (tables are merged)
 				if (this.isTwoTableJoin) {
 					for (int[] table1Row : input) {
@@ -61,6 +69,10 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 									rowsToReturn.add(combineRows(table1Row, table2Row));
 								}	
 							}
+						}
+					}
+					for (int[] row : rowsToReturn) {
+						for (int i : row) {
 						}
 					}
 					return rowsToReturn;
