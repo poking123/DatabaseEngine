@@ -18,11 +18,13 @@ stderr_f = open("proc_stderr", "w")
 
 # calls shell script to run your file
 proc = subprocess.Popen(
-    ["/bin/bash", "run.sh"],
+    #["/bin/bash", "run.sh"],
+    ["java", "DatabaseEngine"],
     encoding="utf-8",
     stdin=subprocess.PIPE,
     stdout=stdout_f,
-    stderr=stderr_f
+    stderr=stderr_f,
+    shell=True
 )
 
 proc.stdin.write(",".join(tables) + "\n")

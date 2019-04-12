@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -29,18 +31,23 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 	
 	@Override
 	public Iterator<List<int[]>> iterator() {
-		return new EquijoinIterator(source1.iterator(), source2, equijoinPredicate.isTwoTableJoin());
+		return new EquijoinIterator(source1.iterator(), source2, equijoinPredicate.isTwoTableJoin(), equijoinPredicate.getTable1JoinCol(), equijoinPredicate.getTable2JoinCol());
 	}
 
 	public class EquijoinIterator implements Iterator<List<int[]>> {
 		private Iterator<List<int[]>> source1Iterator;
 		private Iterable<List<int[]>> source2;
 		private boolean isTwoTableJoin;
+		private int table1JoinCol;
+		private int table2JoinCol;
 		
-		public EquijoinIterator(Iterator<List<int[]>> source1Iterator, Iterable<List<int[]>> source2, boolean isTwoTableJoin) {
+		public EquijoinIterator(Iterator<List<int[]>> source1Iterator, Iterable<List<int[]>> source2, boolean isTwoTableJoin, int table1JoinCol, int table2JoinCol) {
 			this.source1Iterator = source1Iterator;
 			this.source2 = source2;
 			this.isTwoTableJoin = isTwoTableJoin;
+			
+			this.table1JoinCol = table1JoinCol;
+			this.table2JoinCol = table2JoinCol;
 		}
 		
 		@Override
@@ -60,17 +67,91 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 			} else {
 				// BIG IF - Two table equijoin (tables are merged)
 				if (this.isTwoTableJoin) {
-					for (int[] table1Row : input) {
-						Iterator<List<int[]>> table2RowBlocks = source2.iterator();
-						while (table2RowBlocks.hasNext()) {
-							List<int[]> table2RowBlock = table2RowBlocks.next();
-							for (int[] table2Row : table2RowBlock) {
-								if (equijoinPredicate.test(table1Row, table2Row)) {
-									rowsToReturn.add(combineRows(table1Row, table2Row));
-								}	
+					// Sort BNLJ
+					TreeMap<Integer, List<Integer>> valueToIndex = new TreeMap<>();
+					for (int i = 0; i < input.size(); i++) {
+						List<Integer> listOfIndices = new ArrayList<>();
+						int value = input.get(i)[this.table1JoinCol];
+						if (valueToIndex.containsKey(value)) {
+							listOfIndices = valueToIndex.get(value);
+						}
+						listOfIndices.add(i);
+						valueToIndex.put(value, listOfIndices);
+					}
+
+
+					// just have to loop through table 2
+					Iterator<List<int[]>> table2RowBlocks = source2.iterator();
+					while (table2RowBlocks.hasNext()) {
+						List<int[]> table2RowBlock = table2RowBlocks.next();
+						for (int[] table2Row : table2RowBlock) {
+							int value = table2Row[this.table2JoinCol];
+							if (valueToIndex.containsKey(value)) {
+								List<Integer> table1MatchingIndices = valueToIndex.get(value);
+								
+								for (int index : table1MatchingIndices) {
+									int[] table1MatchingRow = input.get(index);
+									rowsToReturn.add(combineRows(table1MatchingRow, table2Row));
+								}
 							}
+							// else, there are no matches
+
 						}
 					}
+
+
+
+
+					// Make HashMap for Hash BNLJ
+					// table1JoinCol Value -> index in buffer
+					// HashMap<Integer, List<Integer>> bufferMap = new HashMap<>();
+					// for (int i = 0; i < input.size(); i++) {
+					// 	List<Integer> listOfIndices = new ArrayList<>();
+
+					// 	int[] table1Row = input.get(i);
+					// 	int value = table1Row[this.table1JoinCol];
+						
+					// 	if (bufferMap.containsKey(value)) {
+					// 		listOfIndices = bufferMap.get(value);
+					// 	}
+					// 	listOfIndices.add(i);
+					// 	bufferMap.put(value, listOfIndices);
+					// }
+					
+					// // just have to loop through table 2
+					// Iterator<List<int[]>> table2RowBlocks = source2.iterator();
+					// while (table2RowBlocks.hasNext()) {
+					// 	List<int[]> table2RowBlock = table2RowBlocks.next();
+					// 	for (int[] table2Row : table2RowBlock) {
+					// 		int value = table2Row[this.table2JoinCol];
+					// 		if (bufferMap.containsKey(value)) {
+					// 			List<Integer> table1MatchingIndices = bufferMap.get(value);
+								
+					// 			for (int index : table1MatchingIndices) {
+					// 				int[] table1MatchingRow = input.get(index);
+					// 				rowsToReturn.add(combineRows(table1MatchingRow, table2Row));
+					// 			}
+					// 		}
+					// 		// else, there are no matches
+
+					// 	}
+					// }
+					
+					
+//					for (int[] table1Row : input) {
+//						Iterator<List<int[]>> table2RowBlocks = source2.iterator();
+//						while (table2RowBlocks.hasNext()) {
+//							List<int[]> table2RowBlock = table2RowBlocks.next();
+//							for (int[] table2Row : table2RowBlock) {
+//								if (equijoinPredicate.test(table1Row, table2Row)) {
+//									rowsToReturn.add(combineRows(table1Row, table2Row));
+//								}	
+//							}
+//						}
+//					}
+					
+					
+					// PRINT - FOR DEBUGGING
 					// for (int[] row : rowsToReturn) {
 					// 	for (int i : row) {
 					// 		System.out.print(i + " ");

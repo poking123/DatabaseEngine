@@ -1,7 +1,6 @@
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Scanner;
 
 public class WhereData {
@@ -29,17 +28,11 @@ public class WhereData {
 			String leftTableAndColumn = tempScanner.next();
 			char leftTableChar = leftTableAndColumn.charAt(0);
 			
-			int cIndex = leftTableAndColumn.indexOf('c');
-			//String leftColumn = leftTableAndColumn.substring(cIndex, leftTableAndColumn.length());
-			
 			tempMap.put(leftTableChar, leftTableAndColumn); // add to map
 			
 			tempScanner.next(); // Equal Operator (equi-join)
 			String rightTableAndColumn = tempScanner.next();
 			char rightTableChar = rightTableAndColumn.charAt(0);
-			
-			cIndex = rightTableAndColumn.indexOf('c');
-			//String rightColumn = rightTableAndColumn.substring(cIndex, rightTableAndColumn.length());
 			
 			tempMap.put(rightTableChar, rightTableAndColumn); // add to map
 			

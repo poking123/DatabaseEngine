@@ -1,86 +1,37 @@
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Scanner;
-
-import java.util.Deque;
-import java.util.ArrayDeque;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.io.File;
 
 
 public class DatabaseEngine {
 
 	public static void main(String[] args) throws IOException {
-		
+		long start = System.currentTimeMillis();
 		// LOADER
 		Loader loader = new Loader();
 		
+		Scanner scanner = new Scanner(System.in);
+		
 		// Get the CSV files
-		String CSVFiles = loader.getCSVFiles();
-		//String CSVFiles = "../../data/xxxs\\B.csv,../../data/xxxs\\C.csv,../../data/xxxs\\A.csv,../../data/xxxs\\D.csv,../../data/xxxs\\E.csv";
-		// String CSVFiles = "../../data/xxs\\B.csv,../../data/xxs\\C.csv,../../data/xxs\\A.csv,../../data/xxs\\D.csv,../../data/xxs\\E.csv,../../data/xxs\\F.csv";
-		//String CSVFiles = "../../data/xs\\B.csv,../../data/xs\\C.csv,../../data/xs\\A.csv,../../data/xs\\D.csv,../../data/xs\\E.csv,../../data/xs\\F.csv";
-		// String CSVFiles = "../../data/s\\B.csv,../../data/s\\C.csv,../../data/s\\A.csv,../../data/s\\D.csv,../../data/s\\E.csv,../../data/s\\F.csv";
-
+		// String CSVFiles = loader.getCSVFiles(scanner);
+		// String CSVFiles = "../../data/xxxs/B.csv,../../data/xxxs/C.csv,../../data/xxxs/A.csv,../../data/xxxs/D.csv,../../data/xxxs/E.csv";
+		// String CSVFiles = "../../data/xxs/B.csv,../../data/xxs/C.csv,../../data/xxs/A.csv,../../data/xxs/D.csv,../../data/xxs/E.csv,../../data/xxs/F.csv";
+		// String CSVFiles = "../../data/xs/B.csv,../../data/xs/C.csv,../../data/xs/A.csv,../../data/xs/D.csv,../../data/xs/E.csv,../../data/xs/F.csv";
+		// String CSVFiles = "../../data/s/B.csv,../../data/s/C.csv,../../data/s/A.csv,../../data/s/D.csv,../../data/s/E.csv,../../data/s/F.csv";
+		// m size dataset
+		String CSVFiles = "../../data/m/A.csv,../../data/m/B.csv,../../data/m/C.csv,../../data/m/D.csv,../../data/m/E.csv,../../data/m/F.csv,";
+		CSVFiles += "../../data/m/G.csv,../../data/m/H.csv,../../data/m/I.csv,../../data/m/J.csv,../../data/m/K.csv,../../data/m/L.csv,";
+		CSVFiles += "../../data/m/M.csv,../../data/m/N.csv,../../data/m/O.csv,../../data/m/P.csv";
+		// l size dataset
+		// String CSVFiles = "../../data/l/A.csv,../../data/l/B.csv,../../data/l/C.csv,../../data/l/D.csv,../../data/l/E.csv,../../data/l/F.csv,";
+		// CSVFiles += "../../data/l/G.csv,../../data/l/H.csv,../../data/l/I.csv,../../data/l/J.csv,../../data/l/K.csv,../../data/l/L.csv,";
+		// CSVFiles += "../../data/l/M.csv,../../data/l/N.csv,../../data/l/O.csv,../../data/l/P.csv,../../data/l/Q.csv";
+		
 		// Loader loads all the data into storage
 		loader.readAllCSVFiles(CSVFiles);
-		
-		
-		//////////////////////////////////
-		// Scan scanA = new Scan("A.dat");
-		// Scan scanB = new Scan("B.dat");
-
-		// EquijoinPredicate ep = new EquijoinPredicate(1, 0);
-		// Equijoin equijoin = new Equijoin(scanA, scanB, ep);
-		
-
-		// Iterator<List<int[]>> ejItr = equijoin.iterator();
-
-		// while (ejItr.hasNext()) {
-		// 	List<int[]> rowBlock = ejItr.next();
-		// 	for (int[] row : rowBlock) {
-		// 		for (int i : row) {
-		// 			System.out.print(i + " ");
-		// 		}
-		// 		System.out.println();
-		// 	}
-		// }
-		
-		// List<int[]> predList = new ArrayList<>();
-		// int[] data = {1, 1, 0};
-		// predList.add(data);
-		// Predicate predicate = new Predicate(predList);
-		// Filter filter = new Filter(scan, predicate);
-
-		// Iterator<List<int[]>> scanItr = scan.iterator();
-		// while (scanItr.hasNext()) {
-		// 	List<int[]> rows = scanItr.next();
-		// 	for (int[] row : rows) {
-		// 		for (int i : row) {
-		// 			System.out.print(i + " ");
-		// 		}
-		// 		System.out.println();
-		// 	}
-		// }
-		
-//		Iterator<List<int[]>> filterItr = filter.iterator();
-//		
-//		while (filterItr.hasNext()) {
-//			List<int[]> rows = filterItr.next();
-//			for (int[] row : rows) {
-//				for (int i : row) {
-//					System.out.print(i + " ");
-//				}
-//				System.out.println();
-//			}
-//		}
-
-		//System.exit(0);
-		////////////////////////////////////////
+		long stop = System.currentTimeMillis();
+		System.out.println(stop - start);
+		System.out.println();
 		
 		// PARSER
 		Parser parser = new Parser();
@@ -110,55 +61,68 @@ public class DatabaseEngine {
 		// // tableQueue.add(scanB);
 		
 		
-		// tableQueue.add(scanF);
-		// tableQueue.add(scanE);
-		// tableQueue.add(scanC);
-		// tableQueue.add(scanD);
+		
+		// // tableQueue.add(scanC);
+		
 		// tableQueue.add(scanA);
+		// tableQueue.add(scanF);
+		// tableQueue.add(scanD);
+		// tableQueue.add(scanE);
+		
 
 		// Queue<Predicate> predicateQueue = new LinkedList<>();
 
-		// // Predicate abE = new EquijoinPredicate(1, 0, true);
+		// Predicate ad = new EquijoinPredicate(3, 0, true);
 		// // Predicate dE = new EquijoinPredicate(3, 0, true);
 		
 
 		// ArrayList<int[]> FList = new ArrayList<>();
-		// int[] fPred = {2, 1, -2034};
+		// int[] fPred = {3, 1, 0};
 		// FList.add(fPred);
 		// Predicate sigmaF = new FilterPredicate(FList);
 		
-		// Predicate fe = new EquijoinPredicate(1, 1, true);
-		// Predicate c = new EquijoinPredicate(5, 1, true);
-		// Predicate d = new EquijoinPredicate(12, 2, true);
-		// Predicate a = new EquijoinPredicate(10, 2, true);
+		// Predicate fd = new EquijoinPredicate(0, 1, true);
+
+		// ArrayList<int[]> EList = new ArrayList<>();
+		// int[] ePred = {3, 1, 0};
+		// EList.add(ePred);
+		// Predicate sigmaE = new FilterPredicate(EList);
+
+
+		// // Predicate c = new EquijoinPredicate(5, 1, true);
+		// Predicate d = new EquijoinPredicate(56, 1, true);
+		// // Predicate a = new EquijoinPredicate(10, 2, true);
 		
-		// // predicateQueue.add(abE);
+		// predicateQueue.add(ad);
 		// predicateQueue.add(sigmaF);
-		// predicateQueue.add(fe);
-		// predicateQueue.add(c);
+		// predicateQueue.add(fd);
+		// predicateQueue.add(sigmaE);
 		// predicateQueue.add(d);
-		// predicateQueue.add(a);
+		// // predicateQueue.add(a);
 
 		// tablesQueue.add(tableQueue);
 		// predicatesQueue.add(predicateQueue);
 
 		// Queue<Predicate> finalPredicateQueue = new LinkedList<>();
 
-		// int[] colsToSum = {9, 14, 12};
+		// int[] colsToSum = {61, 63, 55};
+		// int[] colsToSum = {0, 1, 2};
 		// executionEngine.executeQuery(tablesQueue, predicatesQueue, finalPredicateQueue, colsToSum);
 		// System.exit(0);
 		///////////////////////////////////////////////////////////////////
 
-		Scanner queryScanner = new Scanner(System.in);
-		// Scanner queryScanner = new Scanner(new File("../../data/s\\queries.sql"));
+		//Scanner queryScanner = new Scanner(System.in);
+		
+		scanner = new Scanner(new File("../../data/s/queries.sql"));
 
 		// Gets the number of queries
-		int numOfQueries = parser.getNumOfQueries(queryScanner);
-		
+		int numOfQueries = parser.getNumOfQueries(scanner);
+
+
 		// Read each query
 		for (int i = 0; i < numOfQueries - 1; i++) {
-			parser.readQuery(queryScanner);
-			queryScanner.nextLine(); // Blank Line
+			parser.readQuery(scanner);
+			scanner.nextLine(); // Blank Line
 			
 			optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 			
@@ -169,7 +133,7 @@ public class DatabaseEngine {
 			parser.empty();
 		}
 		// Last Query
-		parser.readQuery(queryScanner);
+		parser.readQuery(scanner);
 
 		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		

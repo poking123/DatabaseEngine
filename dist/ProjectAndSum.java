@@ -4,13 +4,13 @@ import java.util.List;
 public class ProjectAndSum implements Iterator<List<int[]>>{
 	private Iterator<List<int[]>> source;
 	private int[] colsToSum;
-	private int[] sums;
+	private long[] sums;
 	private boolean hasRows;
 	
 	public ProjectAndSum(Iterator<List<int[]>> input, int[] colsToSum) {
 		this.source = input;
 		this.colsToSum = colsToSum;
-		this.sums = new int[colsToSum.length];
+		this.sums = new long[colsToSum.length];
 		this.hasRows = false;
 		
 	}

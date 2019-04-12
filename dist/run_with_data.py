@@ -18,10 +18,9 @@ stderr_f = open("proc_stderr", "w")
 
 # calls shell script to run your file
 proc = subprocess.Popen(
-    ["/bin/bash", "run.sh"],
+    ["java", "DatabaseEngine"],
     encoding="utf-8",
-    stdin=subprocess.PIPE,
-    shell = True
+    stdin=subprocess.PIPE
 )
 
 proc.stdin.write(",".join(tables) + "\n")
@@ -36,6 +35,7 @@ num_queries = sql.count(";")
 proc.stdin.write(f"{num_queries}\n")
 proc.stdin.write(sql)
 proc.stdin.flush()
+
 
 start = timer()
 proc.wait(timeout=60*10 + 60*5)

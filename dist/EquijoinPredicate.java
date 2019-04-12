@@ -25,6 +25,14 @@ public class EquijoinPredicate extends Predicate{
 		return this.type + " - JoinCols: " + table1JoinCol + " " + table2JoinCol;
 	}
 	
+	public int getTable1JoinCol() {
+		return this.table1JoinCol;
+	}
+	
+	public int getTable2JoinCol() {
+		return this.table2JoinCol;
+	}
+	
 	@Override
 	String getType() {
 		return this.type;

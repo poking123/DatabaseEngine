@@ -1,5 +1,4 @@
 
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Parser {
@@ -96,6 +95,8 @@ public class Parser {
 	}
 
 	public int getNumOfQueries(Scanner queryScanner) {
-		return queryScanner.nextInt();
+		return 17;
+		// return Integer.parseInt(queryScanner.nextLine());
+		//return queryScanner.nextInt();
 	}
 }

@@ -1,1 +1,1 @@
-javac DatabaseEngine.java
+javac *.java

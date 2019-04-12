@@ -24,7 +24,7 @@ public class Loader {
 	}
 
 	public void readCSVFile(String path) throws FileNotFoundException, IOException {
-		int tableNameIndex = path.lastIndexOf('\\') + 1;
+		int tableNameIndex = path.lastIndexOf('/') + 1;
 		String tableName = path.substring(tableNameIndex, tableNameIndex + 1);
 
 		Scanner scanner = new Scanner(new File(path));
@@ -130,10 +130,8 @@ public class Loader {
 	}
 	
 	// returns the String of CSV files
-	public String getCSVFiles() {
+	public String getCSVFiles(Scanner scanner) {
 		// Get the CSV files
-		Scanner scanner = new Scanner(System.in);
-		scanner.close();
 		return scanner.nextLine();
 	}
 }
