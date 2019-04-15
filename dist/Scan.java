@@ -4,11 +4,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 
-public class Scan extends RAOperation implements Iterable<List<int[]>> {
+public class Scan extends RAOperation {
 
-	private List<ArrayList<int[]>> list = new ArrayList<>();
+	private Queue<ArrayList<int[]>> list = new LinkedList<>();
 	private String tableName;
 	
 	
@@ -25,7 +26,7 @@ public class Scan extends RAOperation implements Iterable<List<int[]>> {
 	}
 	
 	@Override
-	public Iterator<List<int[]>> iterator() {
+	public Iterator<Queue<int[]>> iterator() {
 		try {
 			return new ScanIterator(list, tableName);
 		} catch (FileNotFoundException e) {
@@ -34,15 +35,15 @@ public class Scan extends RAOperation implements Iterable<List<int[]>> {
 		}
 	}
 	
-	public class ScanIterator implements Iterator<List<int[]>> {
+	public class ScanIterator implements Iterator<Queue<int[]>> {
 			
-			private final int bufferSize = 50;
+//			private final int bufferSize = 50;
 			
 			private final DataInputStream dis;
 			private final int numCols;
 			private int rowsRemaining;
 			
-			public ScanIterator(List<ArrayList<int[]>> rowsBuffer, String tableName) throws FileNotFoundException {
+			public ScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName) throws FileNotFoundException {
 				this.dis = Catalog.openStream(tableName);
 				this.numCols = Catalog.getColumns(tableName);
 				this.rowsRemaining = Catalog.getRows(tableName);
@@ -57,10 +58,10 @@ public class Scan extends RAOperation implements Iterable<List<int[]>> {
 			}
 	
 			@Override
-			public List<int[]> next() {
-				List<int[]> rowsBuffer = new ArrayList<int[]>();
+			public Queue<int[]> next() {
+				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
 				try {
-					while (rowsBuffer.size() < bufferSize) {
+					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
 						int[] row = new int[numCols];
 						for (int i = 0; i < numCols; i++) {
 							row[i] = dis.readInt();

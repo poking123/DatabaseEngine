@@ -19,7 +19,7 @@ stderr_f = open("proc_stderr", "w")
 # calls shell script to run your file
 proc = subprocess.Popen(
     #["/bin/bash", "run.sh"],
-    ["java", "DatabaseEngine"],
+    ["C:/Program Files (x86)/Java/jdk-11.0.2/bin/java", "DatabaseEngine"],
     encoding="utf-8",
     stdin=subprocess.PIPE,
     stdout=stdout_f,

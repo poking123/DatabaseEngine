@@ -1,5 +1,5 @@
-import java.util.List;
+import java.util.Queue;
 
-public abstract class RAOperation implements Iterable<List<int[]>> {
+public abstract class RAOperation implements Iterable<Queue<int[]>> {
 	abstract String getType();
 }

@@ -51,7 +51,7 @@ public class Loader {
 		FileReader fr = new FileReader(path);
 		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName + ".dat")));
 		
-		StringBuilder sb = new StringBuilder();
+//		StringBuilder sb = new StringBuilder();
 		
 		
 		CharBuffer cb1 = CharBuffer.allocate(4 * 1024);
@@ -67,30 +67,30 @@ public class Loader {
 
 			for (int i = 0; i < cb1.length(); i++) {
 				if (cb1.charAt(i) == ',' || cb1.charAt(i) == '\n') {
-                    int numRead = Integer.parseInt(sb.toString());
+					int numRead = Integer.parseInt(cb1, lastNumberStart, i, 10);
                     dos.writeInt(numRead);
 					lastNumberStart = i + 1;
 					// Clears the StringBuilder
-					sb.setLength(0);
+//					sb.setLength(0);
 
 					// Metadata
-					int modIndex = index % numOfCols;
+					//// int modIndex = index % numOfCols;
 					
-					int minValue = minArray[modIndex];
-					minArray[modIndex] = numRead < minValue ? numRead : minValue;
-					int maxValue = maxArray[modIndex];
-					maxArray[modIndex] = numRead < maxValue ? numRead : maxValue;
+					//// int minValue = minArray[modIndex];
+					//// minArray[modIndex] = numRead < minValue ? numRead : minValue;
+					//// int maxValue = maxArray[modIndex];
+					//// maxArray[modIndex] = numRead < maxValue ? numRead : maxValue;
 					
-					uniqueSetArray.get(modIndex).add(numRead);
+					//// uniqueSetArray.get(modIndex).add(numRead);
 
 					index++;
 				} else {
-					sb.append(cb1.charAt(i));
+//					sb.append(cb1.charAt(i));
 				}
 			}
 
 			// Clears the StringBuilder
-			sb.setLength(0);
+//			sb.setLength(0);
 			// Clears the CharBuffer
 			cb2.clear();
 			// Transfers the contents of the CharBuffer
@@ -107,11 +107,12 @@ public class Loader {
 		// METADATA
 		
 		// Puts in the number of unique values into an array
-		int[] uniqueArray = new int[numOfCols];
-		for (int i = 0; i < numOfCols; i++) uniqueArray[i] = uniqueSetArray.get(i).size();
+		//// int[] uniqueArray = new int[numOfCols];
+		//// for (int i = 0; i < numOfCols; i++) uniqueArray[i] = uniqueSetArray.get(i).size();
 
+		StringBuilder sb = new StringBuilder();
 		
-		// Makes header with all the column names
+		// // Makes header with all the column names
 		for (int i = 0; i < numOfCols - 1; i++) {
 			sb.append(tableName + ".c" + i + ",");
 		}
@@ -123,9 +124,9 @@ public class Loader {
 		TableMetaData tmd = new TableMetaData(columnNames);
 		tmd.setRows(index / numOfCols);
 		tmd.setColumns(numOfCols);
-		tmd.setMin(minArray);
-		tmd.setMax(maxArray);
-		tmd.setUnique(uniqueArray);
+		//// tmd.setMin(minArray);
+		//// tmd.setMax(maxArray);
+		//// tmd.setUnique(uniqueArray);
 		Catalog.addData(tableName + ".dat", tmd);
 	}
 	

@@ -1,12 +1,13 @@
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.TreeMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
-public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
-	private Iterable<List<int[]>> source1;
-	private Iterable<List<int[]>> source2;
+public class Equijoin extends RAOperation {
+	private Iterable<Queue<int[]>> source1;
+	private Iterable<Queue<int[]>> source2;
 	private String type;
 	
 	private EquijoinPredicate equijoinPredicate;
@@ -30,18 +31,18 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 	}
 	
 	@Override
-	public Iterator<List<int[]>> iterator() {
+	public Iterator<Queue<int[]>> iterator() {
 		return new EquijoinIterator(source1.iterator(), source2, equijoinPredicate.isTwoTableJoin(), equijoinPredicate.getTable1JoinCol(), equijoinPredicate.getTable2JoinCol());
 	}
 
-	public class EquijoinIterator implements Iterator<List<int[]>> {
-		private Iterator<List<int[]>> source1Iterator;
-		private Iterable<List<int[]>> source2;
+	public class EquijoinIterator implements Iterator<Queue<int[]>> {
+		private Iterator<Queue<int[]>> source1Iterator;
+		private Iterable<Queue<int[]>> source2;
 		private boolean isTwoTableJoin;
 		private int table1JoinCol;
 		private int table2JoinCol;
 		
-		public EquijoinIterator(Iterator<List<int[]>> source1Iterator, Iterable<List<int[]>> source2, boolean isTwoTableJoin, int table1JoinCol, int table2JoinCol) {
+		public EquijoinIterator(Iterator<Queue<int[]>> source1Iterator, Iterable<Queue<int[]>> source2, boolean isTwoTableJoin, int table1JoinCol, int table2JoinCol) {
 			this.source1Iterator = source1Iterator;
 			this.source2 = source2;
 			this.isTwoTableJoin = isTwoTableJoin;
@@ -56,41 +57,76 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 		}
 
 		@Override
-		public List<int[]> next() {
-			List<int[]> input = source1Iterator.next();
+		public Queue<int[]> next() {
+			Queue<int[]> input = source1Iterator.next();
 			
 				
-			List<int[]> rowsToReturn = new ArrayList<>();
+			Queue<int[]> rowsToReturn = new LinkedList<>();
 			
 			if (input.isEmpty()) {
 				return rowsToReturn;
 			} else {
 				// BIG IF - Two table equijoin (tables are merged)
 				if (this.isTwoTableJoin) {
-					// Sort BNLJ
-					TreeMap<Integer, List<Integer>> valueToIndex = new TreeMap<>();
-					for (int i = 0; i < input.size(); i++) {
-						List<Integer> listOfIndices = new ArrayList<>();
-						int value = input.get(i)[this.table1JoinCol];
-						if (valueToIndex.containsKey(value)) {
-							listOfIndices = valueToIndex.get(value);
+					// Sort BNLJ ////////////////////////////
+					// TreeMap<Integer, List<int[]>> valueToRows = new TreeMap<>();
+					// while (!input.isEmpty()) {
+					// 	List<int[]> listOfRows = new LinkedList<>();
+					// 	int[] table1Row = input.remove();
+					// 	int value = table1Row[this.table1JoinCol];
+					// 	if (valueToRows.containsKey(value)) {
+					// 		listOfRows = valueToRows.get(value);
+					// 	}
+					// 	listOfRows.add(table1Row);
+					// 	valueToRows.put(value, listOfRows);
+					// }
+
+					// // just have to loop through table 2
+					// Iterator<Queue<int[]>> table2RowBlocks = source2.iterator();
+					// while (table2RowBlocks.hasNext()) {
+					// 	Queue<int[]> table2RowsBlock = table2RowBlocks.next();
+					// 	while (!table2RowsBlock.isEmpty()) {
+					// 		int[] table2Row = table2RowsBlock.remove();
+					// 		int value = table2Row[this.table2JoinCol];
+					// 		if (valueToRows.containsKey(value)) {
+					// 			List<int[]> table1MatchingRows = valueToRows.get(value);
+					// 			for (int[] table1MatchingRow : table1MatchingRows) {
+					// 				rowsToReturn.add(combineRows(table1MatchingRow, table2Row));
+					// 			}
+					// 		}
+					// 	}
+					// }
+
+
+
+
+					// Make HashMap for Hash BNLJ ////////////////////////////////////
+					// table1JoinCol Value -> index in buffer
+					HashMap<Integer, List<int[]>> bufferMap = new HashMap<>();
+					while (!input.isEmpty()) {
+						List<int[]> listOfIndices = new ArrayList<>();
+
+						int[] table1Row = input.remove();
+						int value = table1Row[this.table1JoinCol];
+						
+						if (bufferMap.containsKey(value)) {
+							listOfIndices = bufferMap.get(value);
 						}
-						listOfIndices.add(i);
-						valueToIndex.put(value, listOfIndices);
+						listOfIndices.add(table1Row);
+						
+						bufferMap.put(value, listOfIndices);
 					}
-
-
+					
 					// just have to loop through table 2
-					Iterator<List<int[]>> table2RowBlocks = source2.iterator();
+					Iterator<Queue<int[]>> table2RowBlocks = source2.iterator();
 					while (table2RowBlocks.hasNext()) {
-						List<int[]> table2RowBlock = table2RowBlocks.next();
+						Queue<int[]> table2RowBlock = table2RowBlocks.next();
 						for (int[] table2Row : table2RowBlock) {
 							int value = table2Row[this.table2JoinCol];
-							if (valueToIndex.containsKey(value)) {
-								List<Integer> table1MatchingIndices = valueToIndex.get(value);
+							if (bufferMap.containsKey(value)) {
+								List<int[]> table1MatchingRows = bufferMap.get(value);
 								
-								for (int index : table1MatchingIndices) {
-									int[] table1MatchingRow = input.get(index);
+								for (int[] table1MatchingRow : table1MatchingRows) {
 									rowsToReturn.add(combineRows(table1MatchingRow, table2Row));
 								}
 							}
@@ -98,46 +134,8 @@ public class Equijoin extends RAOperation implements Iterable<List<int[]>> {
 
 						}
 					}
-
-
-
-
-					// Make HashMap for Hash BNLJ
-					// table1JoinCol Value -> index in buffer
-					// HashMap<Integer, List<Integer>> bufferMap = new HashMap<>();
-					// for (int i = 0; i < input.size(); i++) {
-					// 	List<Integer> listOfIndices = new ArrayList<>();
-
-					// 	int[] table1Row = input.get(i);
-					// 	int value = table1Row[this.table1JoinCol];
-						
-					// 	if (bufferMap.containsKey(value)) {
-					// 		listOfIndices = bufferMap.get(value);
-					// 	}
-					// 	listOfIndices.add(i);
-					// 	bufferMap.put(value, listOfIndices);
-					// }
 					
-					// // just have to loop through table 2
-					// Iterator<List<int[]>> table2RowBlocks = source2.iterator();
-					// while (table2RowBlocks.hasNext()) {
-					// 	List<int[]> table2RowBlock = table2RowBlocks.next();
-					// 	for (int[] table2Row : table2RowBlock) {
-					// 		int value = table2Row[this.table2JoinCol];
-					// 		if (bufferMap.containsKey(value)) {
-					// 			List<Integer> table1MatchingIndices = bufferMap.get(value);
-								
-					// 			for (int index : table1MatchingIndices) {
-					// 				int[] table1MatchingRow = input.get(index);
-					// 				rowsToReturn.add(combineRows(table1MatchingRow, table2Row));
-					// 			}
-					// 		}
-					// 		// else, there are no matches
-
-					// 	}
-					// }
-					
-					
+					// REGULAR BLOCK NESTED LOOP JOIN
 //					for (int[] table1Row : input) {
 //						Iterator<List<int[]>> table2RowBlocks = source2.iterator();
 //						while (table2RowBlocks.hasNext()) {

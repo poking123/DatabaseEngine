@@ -49,6 +49,19 @@ public class ExecutionEngine {
 						Equijoin disjointEquijoin = new Equijoin(disjointTable1, disjointTable2, ep2);
 						resultQueue.add(disjointEquijoin);
 						break;
+
+					case "mergeJoinPredicate": 
+						// makes sure result queue size is 2
+						while (resultQueue.size() < 2) {
+							resultQueue.add(tableQueue.remove());
+						}
+						
+						MergeJoinPredicate ep3 = (MergeJoinPredicate) currentPredicate;
+						RAOperation mgTable1 = resultQueue.remove();
+						RAOperation mgTable2 = resultQueue.remove();
+						MergeJoin mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
+						resultQueue.add(mergeJoin); // adds result to result queue
+						break;
 				}
 			}
 			finalDeque.add(resultQueue.remove());
@@ -67,6 +80,7 @@ public class ExecutionEngine {
 		// System.out.println("finalDeque: " + finalDeque);
 		RAOperation finalOperation = finalDeque.pop(); // should only have 1 operation left in the queue
 		// System.out.println("finalDeque: " + finalDeque);
+		// System.out.println("final Operation is " + finalOperation);
 		ProjectAndSum pas = new ProjectAndSum(finalOperation.iterator(), columnsToSum);
 		while (pas.hasNext()) {
 			pas.next();

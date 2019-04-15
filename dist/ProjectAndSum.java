@@ -1,18 +1,17 @@
 import java.util.Iterator;
-import java.util.List;
+import java.util.Queue;
 
-public class ProjectAndSum implements Iterator<List<int[]>>{
-	private Iterator<List<int[]>> source;
+public class ProjectAndSum implements Iterator<Queue<int[]>>{
+	private Iterator<Queue<int[]>> source;
 	private int[] colsToSum;
 	private long[] sums;
 	private boolean hasRows;
 	
-	public ProjectAndSum(Iterator<List<int[]>> input, int[] colsToSum) {
+	public ProjectAndSum(Iterator<Queue<int[]>> input, int[] colsToSum) {
 		this.source = input;
 		this.colsToSum = colsToSum;
 		this.sums = new long[colsToSum.length];
 		this.hasRows = false;
-		
 	}
 	
 	@Override
@@ -21,8 +20,8 @@ public class ProjectAndSum implements Iterator<List<int[]>>{
 	}
 
 	@Override
-	public List<int[]> next() {
-		List<int[]> input = source.next();
+	public Queue<int[]> next() {
+		Queue<int[]> input = source.next();
 		
 		for (int[] row : input) {
 			// System.out.println("Summing");

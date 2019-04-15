@@ -570,7 +570,7 @@ public class Optimizer {
 		int secondTableJoinCol = findIndex(secondHeader.split(","), secondJoinColumn);
 		
 		// Adds equijoin to predicateQueue
-		predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, true));
+		predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
 		
 		boolean lastIsDisjoint = false;
 		// goes through whereTables and joins table to the table we already made
@@ -628,7 +628,7 @@ public class Optimizer {
 					// adds two table equijoin to predicateQueue
 					firstTableJoinCol = findIndex(firstTableHeaderArr, firstJoinColumn);
 					secondTableJoinCol = findIndex(tempHeader.split(","), secondJoinColumn);
-					predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, true));
+					predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
 					whereTablesItr.remove();
 				} else if (containsTable2) {
 					// System.out.println("contains table 2");
@@ -650,7 +650,7 @@ public class Optimizer {
 					// adds two table equijoin to predicateQueue
 					firstTableJoinCol = findIndex(firstTableHeaderArr, secondJoinColumn);
 					secondTableJoinCol = findIndex(tempHeader.split(","), firstJoinColumn);
-					predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, true));
+					predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
 					whereTablesItr.remove();
 				}
 				// else (disjoint join, so skip)
@@ -735,7 +735,7 @@ public class Optimizer {
 				}
 				
 				// Adds equijoin to predicateQueue
-				predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, true));
+				predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
 
 			}
 		}
@@ -758,7 +758,7 @@ public class Optimizer {
 		}
 		
 		
-		// System.out.println("Overall Header:");
+		// System.out.println("Overall Header:++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 		// System.out.println(overallHeader.toString());
 		// System.out.println();
 		String[] overallHeaderArr = overallHeader.toString().split(",");
