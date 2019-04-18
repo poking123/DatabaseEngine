@@ -1,0 +1,23 @@
+
+
+
+
+Inside all RAOperations, we have a colsToKeep, which will take the rows from the original rows
+
+
+
+
+
+
+
+
+
+Optimizer:
+	- get map of tableName (char) -> needed columns (int)
+
+	- add a project of a scan instead of just a scan
+
+	- map of columns -> indices
+
+	- use a header to keep track of columns
+	- we can get TreeSet from map and then make an array of columns to keep

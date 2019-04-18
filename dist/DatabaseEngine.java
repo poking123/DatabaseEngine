@@ -8,12 +8,12 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 10000;
+	static final int bufferSize = 700000;
 	static int tempNumber = 0;
 
 	public static void main(String[] args) throws IOException {
 		// long totalStart = System.currentTimeMillis();
-		// long start = System.currentTimeMillis();
+		
 		// LOADER
 		Loader loader = new Loader();
 		
@@ -34,11 +34,13 @@ public class DatabaseEngine {
 		// CSVFiles += "../../data/l/G.csv,../../data/l/H.csv,../../data/l/I.csv,../../data/l/J.csv,../../data/l/K.csv,../../data/l/L.csv,";
 		// CSVFiles += "../../data/l/M.csv,../../data/l/N.csv,../../data/l/O.csv,../../data/l/P.csv,../../data/l/Q.csv";
 		
+		// long start = System.currentTimeMillis();
 		// Loader loads all the data into storage
 		loader.readAllCSVFiles(CSVFiles);
 		// long stop = System.currentTimeMillis();
 		// System.out.println("Loading Time : " + (stop - start));
 		// System.out.println();
+		// System.exit(0);
 		
 		// PARSER
 		Parser parser = new Parser();
@@ -52,79 +54,89 @@ public class DatabaseEngine {
 		///////////////////////////////////////////////////////////////////
 
 		// Representation of the first query from the xxs dataset
-		Queue<Queue<RAOperation>> tablesQueue = new LinkedList<>();
-		Queue<Queue<Predicate>> predicatesQueue = new LinkedList<>();
+		// long start = System.currentTimeMillis();
+		// Queue<Queue<RAOperation>> tablesQueue = new LinkedList<>();
+		// Queue<Queue<Predicate>> predicatesQueue = new LinkedList<>();
 
 
-		Queue<RAOperation> tableQueue = new LinkedList<>();
-		RAOperation scanA = new Scan("A.dat");
-		RAOperation scanC = new Scan("C.dat");
-		RAOperation scanB = new Scan("B.dat");
+		// Queue<RAOperation> tableQueue = new LinkedList<>();
+		// RAOperation scanA = new Scan("A.dat");
+		// RAOperation scanC = new Scan("C.dat");
+		// RAOperation scanB = new Scan("B.dat");
 		
-		RAOperation scanD = new Scan("D.dat");
-		RAOperation scanE = new Scan("E.dat");
-		RAOperation scanF = new Scan("F.dat");
+		// RAOperation scanD = new Scan("D.dat");
+		// RAOperation scanE = new Scan("E.dat");
+		// RAOperation scanF = new Scan("F.dat");
 
-		
-		tableQueue.add(scanD);
-		tableQueue.add(scanA);
-		tableQueue.add(scanF);
-		tableQueue.add(scanC);
-		tableQueue.add(scanB);
-		
-		
-		
+		// RAOperation projD = new Project(scanD, new int[]{0, 2, 3, 4});
 
-		Queue<Predicate> predicateQueue = new LinkedList<>();
+		// tableQueue.add(projD);
+		// // tableQueue.add(scanF);
+		// // tableQueue.add(scanE);
+		// // tableQueue.add(scanC);
 		
-		// Predicate ce = new MergeJoinPredicate(1, 0);
-
-		ArrayList<int[]> DList = new ArrayList<>();
-		int[] dPred = {3, 2, -7003};
-		DList.add(dPred);
-		Predicate sigmaD = new FilterPredicate(DList);
-
+		// // tableQueue.add(scanD);
+		
+		
+		
+		
+		
 		
 
-		Predicate a = new MergeJoinPredicate(0, 3);
+		// Queue<Predicate> predicateQueue = new LinkedList<>();
 		
-		Predicate f = new MergeJoinPredicate(1, 0);
-		Predicate c = new MergeJoinPredicate(7, 0);
-		Predicate b = new MergeJoinPredicate(6, 0);
+		// // // Predicate ce = new MergeJoinPredicate(1, 0);
 
 		// ArrayList<int[]> EList = new ArrayList<>();
-		// int[] ePred = {3, 1, 0};
+		// int[] ePred = {2, 0, -9496};
 		// EList.add(ePred);
 		// Predicate sigmaE = new FilterPredicate(EList);
 
+		
 
-		// // Predicate c = new EquijoinPredicate(5, 1, true);
-		// Predicate d = new EquijoinPredicate(56, 1, true);
-		// // Predicate a = new EquijoinPredicate(10, 2, true);
+		// // Predicate fe = new MergeJoinPredicate(1, 1);
 		
+		// // Predicate c = new MergeJoinPredicate(5, 1);
+		// // Predicate a = new MergeJoinPredicate(10, 2);
+		// // Predicate d = new MergeJoinPredicate(23, 0);
+
+		// // // ArrayList<int[]> DList = new ArrayList<>();
+		// // // int[] dPred = {8, 1, 3487};
+		// // // DList.add(dPred);
+		// // // Predicate sigmaD = new FilterPredicate(DList);
+
+
+		// // // Predicate e = new EquijoinPredicate(36, 1, true);
+		// // // Predicate d = new EquijoinPredicate(56, 1, true);
+		// // // Predicate a = new EquijoinPredicate(10, 2, true);
 		
-		predicateQueue.add(sigmaD);
-		predicateQueue.add(a);
-		predicateQueue.add(f);
+		// // predicateQueue.add(fe);		
+		// // predicateQueue.add(c);
 		// predicateQueue.add(sigmaE);
-		predicateQueue.add(c);
-		predicateQueue.add(b);
+		// // predicateQueue.add(a);
+		
+		// // // predicateQueue.add(sigmaE);
+		// // predicateQueue.add(d);
+		// // // predicateQueue.add(b);
 
-		 tablesQueue.add(tableQueue);
-		 predicatesQueue.add(predicateQueue);
+		//  tablesQueue.add(tableQueue);
+		//  predicatesQueue.add(predicateQueue);
 
-		 Queue<Predicate> finalPredicateQueue = new LinkedList<>();
+		//  Queue<Predicate> finalPredicateQueue = new LinkedList<>();
 
-		int[] colsToSum = {0, 1, 2, 3};
-		// int[] colsToSum = {15, 19, 21};
-		// int[] colsToSum = {56, 50, 3, 55};
-		executionEngine.executeQuery(tablesQueue, predicatesQueue, finalPredicateQueue, colsToSum);
-		System.exit(0);
-		///////////////////////////////////////////////////////////////////
+		// int[] colsToSum = {0, 1, 2, 3};
+		// // // int[] colsToSum = {15, 19, 21};
+		// // // int[] colsToSum = {56, 50, 3, 55};
+		// executionEngine.executeQuery(tablesQueue, predicatesQueue, finalPredicateQueue, colsToSum);
+		// // long stop = System.currentTimeMillis();
+		// // System.out.println(stop - start);
+		// System.exit(0);
+		// ///////////////////////////////////////////////////////////////////
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
 		scanner = new Scanner(new File("../../data/xs/queries.sql"));
+		// scanner = new Scanner(new File("../../data/xxxs/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
 
@@ -147,10 +159,10 @@ public class DatabaseEngine {
 			// System.out.println("Optimizer Time: " + (stop - start));
 			// totalOptimizerTime += (stop - start);
 
-			// start = System.currentTimeMillis();
+			// long start = System.currentTimeMillis();
 			// Execute Query
 			executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum());
-			// stop = System.currentTimeMillis();
+			// long stop = System.currentTimeMillis();
 			// System.out.println("Execution Time: " + (stop - start));
 			// totalExecutionTime += (stop - start);
 
@@ -162,8 +174,12 @@ public class DatabaseEngine {
 
 		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		
+		// long start = System.currentTimeMillis();
 		// Execute Query
 		executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum());
+		// long stop = System.currentTimeMillis();
+		// System.out.println("Execution Time: " + (stop - start));
+		
 		// long totalStop = System.currentTimeMillis();
 
 		// System.out.println("Total Parse Time " + totalParseTime);

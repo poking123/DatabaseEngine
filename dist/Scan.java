@@ -65,7 +65,9 @@ public class Scan extends RAOperation {
 						int[] row = new int[numCols];
 						for (int i = 0; i < numCols; i++) {
 							row[i] = dis.readInt();
+							// System.out.print(row[i] + " ");
 						}
+						// System.out.println();
 						rowsBuffer.add(row);
 						rowsRemaining--;
 					}

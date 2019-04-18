@@ -1,0 +1,35 @@
+
+
+
+
+Currently have a big mistake in logic for estimatePredicates
+
+- Input:
+	- predicate data on one table
+
+
+- iterate over predicateData (ArrayList<int[]>)
+- we would like to map column to predicateData
+	- column -> array of operators
+		 -> array of values
+	
+	- we can simplify predicates on a column to just 2 or less predicates
+
+	- use P and Q prediction (extended) to get final prediction (put in catalog)
+
+
+START
+- iterate over predicateData (ArrayList<int[]>)
+	- columnToPredicate - map from Integer (column) -> ArrayList<int[]{operator, compareValue}>
+
+
+- iterate over columnToPredicate.keySet()
+	- if .get(column) is greater than 2, call reducePredicates (to be defined)
+	- predicateData is empty if the predicate would not return any rows
+
+
+- function that takes in a column and returns the estimated amount of rows based on the columnToPredicatemap
+
+- use P and Q prediction to predict final rows
+
+END

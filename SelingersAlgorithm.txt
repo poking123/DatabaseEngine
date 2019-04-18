@@ -1,0 +1,20 @@
+
+
+
+Selinger's Algorithm
+
+- estimatePredicates
+	- go through the string of table names
+	- lowercase the table names with a predicate
+	- put lowercase name in Catalog
+	- return string with lowercase names (if it has a predicate)
+
+
+- loadInPairs
+	- go throuh the string of table names (now lowercased)
+	- and put in "bestOrderMap", just itself (best order for 2 tables is just those two tables)
+	- aB -> aB and Ba -> Ba
+
+
+- computeBest
+	-

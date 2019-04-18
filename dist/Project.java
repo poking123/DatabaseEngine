@@ -1,9 +1,8 @@
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
+import java.util.LinkedList;
 
-public class Project extends RAOperation implements Iterable<Queue<int[]>>{
+public class Project extends RAOperation {
 	private Iterable<Queue<int[]>> source;
 	private int[] colsToKeep;
 	
@@ -12,49 +11,52 @@ public class Project extends RAOperation implements Iterable<Queue<int[]>>{
 		this.colsToKeep = colsToKeep;
 	}
 	
-	public String getType() {
-		return "project";
-	}
 	
-	@Override
-	public Iterator<Queue<int[]>> iterator() {
-		return new ProjectIterator(source.iterator());
-	}
-	
-	
-	public class ProjectIterator implements Iterator<Queue<int[]>> {
-		private Iterator<Queue<int[]>> sourceIterator;
+
+    @Override
+    public Iterator<Queue<int[]>> iterator() {
+        return new ProjectIterator(source.iterator(), colsToKeep);
+    }
+
+    @Override
+    String getType() {
+        return "project";
+    }
+
+
+    public class ProjectIterator implements Iterator<Queue<int[]>> {
+        private Iterator<Queue<int[]>> sourceIterator;
+        private int[] colsToKeep;
 		
-		public ProjectIterator(Iterator<Queue<int[]>> sourceIterator) {
-			this.sourceIterator = sourceIterator;
+		public ProjectIterator(Iterator<Queue<int[]>> sourceIterator, int[] colsToKeep) {
+            this.sourceIterator = sourceIterator;
+            this.colsToKeep = colsToKeep;
 		}
 		
 		@Override
-		public boolean hasNext() {
-			return sourceIterator.hasNext();
-		}
-		@Override
-		public Queue<int[]> next() {
-			Queue<int[]> input = sourceIterator.next();
-			Queue<int[]> rowsToReturn = new LinkedList<>();
-			
-			if (input.isEmpty()) {
-				return rowsToReturn;
-			} else {
-				for (int[] row : input) {
-					int[] newRow = new int[colsToKeep.length];
-					for (int i = 0; i < colsToKeep.length; i++) {
-						int keepIndex = colsToKeep[i];
-						newRow[i] = row[keepIndex];
-					}
-					rowsToReturn.add(newRow);
-				}
-				
-				return rowsToReturn;
-			}
-			
-			
-		}
+        public boolean hasNext() {
+            return sourceIterator.hasNext();
+        }
+
+        @Override
+        public Queue<int[]> next() {
+            Queue<int[]> input = sourceIterator.next();
+            Queue<int[]> rowsToKeep = new LinkedList<>();
+
+            while (!input.isEmpty()) {
+                int[] oldRow = input.remove();
+                int[] newRow = new int[this.colsToKeep.length];
+
+                for (int i = 0; i < this.colsToKeep.length; i++) {
+                    newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
+                    // System.out.print(newRow[i] + " ");
+                }
+                // System.out.println();
+                rowsToKeep.add(newRow);
+            }
+
+            return rowsToKeep;
+        }
 	}
-	
+
 }

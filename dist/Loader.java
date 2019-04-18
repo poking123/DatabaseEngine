@@ -37,14 +37,14 @@ public class Loader {
 		// Arrays for metadata
 		int[] minArray = new int[numOfCols];
 		int[] maxArray = new int[numOfCols];
-		ArrayList<HashSet<Integer>> uniqueSetArray = new ArrayList<HashSet<Integer>>();
-		for (int i = 0; i < numOfCols; i++) uniqueSetArray.add(new HashSet<Integer>());
+		// ArrayList<HashSet<Integer>> uniqueSetArray = new ArrayList<HashSet<Integer>>();
+		// for (int i = 0; i < numOfCols; i++) uniqueSetArray.add(new HashSet<Integer>());
 
 		// Places actual values in the metadata arrays
 		for (int i = 0; i < numOfCols; i++) {
 			int temp = Integer.parseInt(firstLine[i]);
 			minArray[i] = temp;
-			minArray[i] = temp;
+			maxArray[i] = temp;
 		}
 
 
@@ -74,12 +74,12 @@ public class Loader {
 //					sb.setLength(0);
 
 					// Metadata
-					//// int modIndex = index % numOfCols;
+					int modIndex = index % numOfCols;
 					
-					//// int minValue = minArray[modIndex];
-					//// minArray[modIndex] = numRead < minValue ? numRead : minValue;
-					//// int maxValue = maxArray[modIndex];
-					//// maxArray[modIndex] = numRead < maxValue ? numRead : maxValue;
+					int minValue = minArray[modIndex];
+					minArray[modIndex] = numRead < minValue ? numRead : minValue;
+					int maxValue = maxArray[modIndex];
+					maxArray[modIndex] = numRead > maxValue ? numRead : maxValue;
 					
 					//// uniqueSetArray.get(modIndex).add(numRead);
 
@@ -105,10 +105,19 @@ public class Loader {
 		dos.close();
 
 		// METADATA
+
+		int numOfRows = index / numOfCols;
 		
 		// Puts in the number of unique values into an array
-		//// int[] uniqueArray = new int[numOfCols];
+		int[] uniqueArray = new int[numOfCols];
 		//// for (int i = 0; i < numOfCols; i++) uniqueArray[i] = uniqueSetArray.get(i).size();
+
+		// estimate for number of unique values in a column is the min of the number of columns or the max - min
+		for (int i = 0; i < numOfCols; i++) {
+			int maxMinDiff = maxArray[i] - minArray[i];
+			uniqueArray[i] = (numOfRows < maxMinDiff) ? numOfRows : maxMinDiff;
+		}
+
 
 		StringBuilder sb = new StringBuilder();
 		
@@ -122,12 +131,15 @@ public class Loader {
 		// Adds the meta data to TableMetaData
 		// Then add TableMetaData to the catalog
 		TableMetaData tmd = new TableMetaData(columnNames);
-		tmd.setRows(index / numOfCols);
+		tmd.setRows(numOfRows);
 		tmd.setColumns(numOfCols);
-		//// tmd.setMin(minArray);
-		//// tmd.setMax(maxArray);
-		//// tmd.setUnique(uniqueArray);
+		tmd.setMin(minArray);
+		tmd.setMax(maxArray);
+		tmd.setUnique(uniqueArray);
 		Catalog.addData(tableName + ".dat", tmd);
+		minArray = null;
+		maxArray = null;
+		uniqueArray = null;
 	}
 	
 	// returns the String of CSV files

@@ -17,12 +17,14 @@ public class MergeJoin extends RAOperation {
 	private Iterable<Queue<int[]>> source2;
 	private String type;
 	private MergeJoinPredicate mergeJoinPredicate;
+	// private int[] colsToKeep;
 	
 	public MergeJoin(RAOperation source1, RAOperation source2, MergeJoinPredicate mergeJoinPredicate) {
 		this.source1 = source1;
 		this.source2 = source2;
 		this.mergeJoinPredicate = mergeJoinPredicate;
 		this.type = "MergeJoin";
+		// this.colsToKeep = colsToKeep;
 	}
 
 	@Override
@@ -71,8 +73,12 @@ public class MergeJoin extends RAOperation {
 
 		private boolean noRows;
 		private boolean noHasNext;
+
+		// private int[] colsToKeep;
 		
 		public MergeJoinIterator(Iterator<Queue<int[]>> source1Iterator, Iterator<Queue<int[]>> source2Iterator, int table1JoinCol, int table2JoinCol) throws IOException {
+			// this.colsToKeep = colsToKeep;
+			
 			this.table1JoinCol = table1JoinCol;
 			this.table2JoinCol = table2JoinCol;
 			// System.out.println("table1JoinCol is " + table1JoinCol);
@@ -303,8 +309,18 @@ public class MergeJoin extends RAOperation {
 						
 					} else {
 						if(table1Done && table2Done) {
-							if (dis1Queue.size() == 1 && dis2Queue.size() == 1)
+							if (dis1Queue.size() == 1 && dis2Queue.size() == 1) {
+								// int[] oldRow = combineRows(dis1Queue.remove(), dis2Queue.remove());
+								// int[] newRow = new int[this.colsToKeep.length];
+								// for (int i = 0; i < newRow.length; i++) {
+								// 	newRow[i] = oldRow[this.colsToKeep[i]];
+								// }
+								// rowsToReturn.add(newRow);
+
 								rowsToReturn.add(combineRows(dis1Queue.remove(), dis2Queue.remove()));
+							}
+
+								
 							break;
 						}
 
@@ -381,7 +397,7 @@ public class MergeJoin extends RAOperation {
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
-					System.exit(0);
+					
 					break;
 				}
 			}
@@ -409,6 +425,13 @@ public class MergeJoin extends RAOperation {
 					// for (int i : combineRows(dis1Row, dis2Row))
 					// 	System.out.print(i + " ");
 					// System.out.println();
+					// int[] oldRow = combineRows(dis1Row, dis2Row);
+					// int[] newRow = new int[this.colsToKeep.length];
+					// for (int i = 0; i < newRow.length; i++) {
+					// 	newRow[i] = oldRow[this.colsToKeep[i]];
+					// }
+					// rowsToReturn.add(newRow);
+
 					rowsToReturn.add(combineRows(dis1Row, dis2Row));
 				}
 			}

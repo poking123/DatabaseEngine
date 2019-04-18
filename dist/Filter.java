@@ -6,6 +6,7 @@ import java.util.Queue;
 public class Filter extends RAOperation {
 	private Iterable<Queue<int[]>> source;
 	private FilterPredicate predicate;
+	// private int[] colsToKeep;
 
 	private String type;
 	
@@ -13,6 +14,7 @@ public class Filter extends RAOperation {
 		this.source = input;
 		this.predicate = p;
 		this.type = "filter";
+		// this.colsToKeep = colsToKeep;
 	}
 	
 	String getType() {
@@ -27,9 +29,11 @@ public class Filter extends RAOperation {
 
 	public class FilterIterator implements Iterator<Queue<int[]>> {
 		private Iterator<Queue<int[]>> sourceIterator;
+		// private int[] colsToKeep;
 		
 		public FilterIterator(Iterator<Queue<int[]>> sourceIterator) {
 			this.sourceIterator = sourceIterator;
+			// this.colsToKeep = colsToKeep;
 		}
 		
 		@Override
@@ -42,14 +46,20 @@ public class Filter extends RAOperation {
 			// System.out.println("Filter next called");
 			Queue<int[]> input = sourceIterator.next();
 			Queue<int[]> rowsToReturn = new LinkedList<>();
-			
+			// System.out.println("input is " + input.size());
 			if (input.isEmpty()) {
-				// System.out.println("filter input is empty");
+				System.out.println("filter input is empty");
 				return rowsToReturn;
 			} else {
 				// System.out.println("filter - testing ");
 				for (int[] row : input) {
 					if (predicate.test(row)) {
+						// int[] newRow = new int[this.colsToKeep.length];
+						// for (int i = 0; i < newRow.length; i++) {
+						// 	newRow[i] = row[this.colsToKeep[i]];
+						// }
+						// rowsToReturn.add(newRow);
+
 						rowsToReturn.add(row);
 					}	
 				}
@@ -61,6 +71,7 @@ public class Filter extends RAOperation {
 				// 	System.out.println();
 				// }
 				// System.out.println();
+				
 				return rowsToReturn;
 			}
 		}

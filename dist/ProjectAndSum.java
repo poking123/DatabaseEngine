@@ -11,7 +11,7 @@ public class ProjectAndSum implements Iterator<Queue<int[]>>{
 		this.source = input;
 		this.colsToSum = colsToSum;
 		this.sums = new long[colsToSum.length];
-		this.hasRows = false;
+		// this.hasRows = false;
 	}
 	
 	@Override

@@ -1,0 +1,94 @@
+
+Optimizer
+
+// separate into left deep join trees - DONE
+- each Character -> Set of Characters it can join with
+
+- We have a set of all the characters
+
+- we have a queue of character to look at the map of
+- put one character (the first) into a set - set of table characters
+- and put that character (the first) into the queue
+
+while (set of all characters is not empty)
+	while (queue is not empty and set of all characters is not empty)
+		- get character from the set
+		- get set that character (the first) joins with (using the map)
+		- add them to set of table characters
+		- remove them from set of all characters
+		- place in queue if not already in set of table characters
+	
+	- add set into queue
+
+
+- output: queue of sets 
+
+// find the optimal join order - DONE
+- for each set in queue
+	- build String using StringBuilder
+	- call Selinger's algorithm (ABSTRACTION) to get the optimal join order
+	- add String (join order) to next queue
+
+
+// prepare the join for the execution engine - NEED TO DO
+- for each String in queue
+	- check for predicate
+	- check for what join cols
+	- calculate join col for left deep table (maybe try to use integers)
+
+- we have a map from tableName -> starting index of that table
+What to do with a string: (a best order)
+	- get first table
+	- if it is lowercase, it has a predicate
+		- change table name to uppercase (all table names need to be uppercase)
+		- add a filter predicate
+
+
+	- add a scan anyways
+
+	- get number of columns using Catalog
+	- map (tableNameToStartingIndexMap) tableName -> startingIndex
+	- startingIndex += number of columns
+
+	- keep a set with all tables currently already joined
+	- add table1 to this set
+
+	- for i = 1 to bestOrder.length() - 1
+		- if charAt(i) is lowercase
+			- make tableName uppercase
+			- get predicate data using "tablePredicateMap" (map from tableName -> ArrayList of predicates)
+			- add predicate filter
+
+		- go through whereTables to find the join
+		- get join cols
+		- if tableNameToStartingIndexMap.containsKey(table2)
+			- oneTableEquijoin
+			- add fake table
+		- else
+			- add mergeJoin (need join cols) or add two table equijoin
+			- add scan
+
+
+Output: 
+	- need to save:
+	- getTablesQueue
+	- getPredicatesQueue
+	- getFinalPredicateQueue (final cross products)
+	- getColumnsToSum - (determine this at the very end)
+	- also, maybe use map from char -> column start (instead of saving strings)
+
+
+need to do: 
+- estimatePredicates - update number of unique values after predicate (just subtract rows taken out from original value - make sure value is at least 1)
+- for joins, we just need to know the number of rows and the number unique values in each column
+- Selinger's algorithm
+
+
+
+
+
+
+- selinger's algorithm
+- separate into left deep trees
+- perform selinger's algorithm on each tree
+- put optimized tree into queue
