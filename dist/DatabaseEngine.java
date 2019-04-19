@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 700000;
+	static final int bufferSize = 50000;
 	static int tempNumber = 0;
 
 	public static void main(String[] args) throws IOException {
@@ -68,65 +68,63 @@ public class DatabaseEngine {
 		// RAOperation scanE = new Scan("E.dat");
 		// RAOperation scanF = new Scan("F.dat");
 
-		// RAOperation projD = new Project(scanD, new int[]{0, 2, 3, 4});
+		// RAOperation projD = new Project(scanD, new int[]{0, 1, 2});
+		// RAOperation projA = new Project(scanA, new int[]{1, 3});
+		// RAOperation projF = new Project(scanF, new int[]{0, 1, 4});
+		// RAOperation projE = new Project(scanE, new int[]{1, 4});
+		// RAOperation projB = new Project(scanB, new int[]{0, 1});
 
 		// tableQueue.add(projD);
-		// // tableQueue.add(scanF);
-		// // tableQueue.add(scanE);
-		// // tableQueue.add(scanC);
-		
-		// // tableQueue.add(scanD);
-		
-		
-		
-		
-		
-		
+		// tableQueue.add(projA);
+		// tableQueue.add(projF);
+		// tableQueue.add(projE);
+		// tableQueue.add(projB);
 
 		// Queue<Predicate> predicateQueue = new LinkedList<>();
 		
 		// // // Predicate ce = new MergeJoinPredicate(1, 0);
 
+		// ArrayList<int[]> DList = new ArrayList<>();
+		// int[] dPred = {1, 1, 121};
+		// DList.add(dPred);
+		// Predicate sigmaD = new FilterPredicate(DList);
+
+		
+
+		// Predicate a = new MergeJoinPredicate(0, 1);
+		// Predicate f = new MergeJoinPredicate(1, 0);
+		// Predicate e = new MergeJoinPredicate(6, 0);
+		// Predicate b = new MergeJoinPredicate(3, 0);
+
 		// ArrayList<int[]> EList = new ArrayList<>();
-		// int[] ePred = {2, 0, -9496};
+		// int[] ePred = {1, 0, -8144};
 		// EList.add(ePred);
 		// Predicate sigmaE = new FilterPredicate(EList);
-
-		
-
-		// // Predicate fe = new MergeJoinPredicate(1, 1);
-		
-		// // Predicate c = new MergeJoinPredicate(5, 1);
-		// // Predicate a = new MergeJoinPredicate(10, 2);
-		// // Predicate d = new MergeJoinPredicate(23, 0);
-
-		// // // ArrayList<int[]> DList = new ArrayList<>();
-		// // // int[] dPred = {8, 1, 3487};
-		// // // DList.add(dPred);
-		// // // Predicate sigmaD = new FilterPredicate(DList);
 
 
 		// // // Predicate e = new EquijoinPredicate(36, 1, true);
 		// // // Predicate d = new EquijoinPredicate(56, 1, true);
 		// // // Predicate a = new EquijoinPredicate(10, 2, true);
 		
-		// // predicateQueue.add(fe);		
-		// // predicateQueue.add(c);
+		// predicateQueue.add(sigmaD);
+		// predicateQueue.add(a);		
+		// predicateQueue.add(f);
 		// predicateQueue.add(sigmaE);
-		// // predicateQueue.add(a);
+		// predicateQueue.add(e);
+		// predicateQueue.add(b);
 		
-		// // // predicateQueue.add(sigmaE);
+		
 		// // predicateQueue.add(d);
-		// // // predicateQueue.add(b);
+		// // predicateQueue.add(b);
 
 		//  tablesQueue.add(tableQueue);
 		//  predicatesQueue.add(predicateQueue);
 
 		//  Queue<Predicate> finalPredicateQueue = new LinkedList<>();
 
-		// int[] colsToSum = {0, 1, 2, 3};
-		// // // int[] colsToSum = {15, 19, 21};
-		// // // int[] colsToSum = {56, 50, 3, 55};
+		// // int[] colsToSum = {7, 2, 11};
+
+		// int[] colsToSum = {7, 2, 11};
 		// executionEngine.executeQuery(tablesQueue, predicatesQueue, finalPredicateQueue, colsToSum);
 		// // long stop = System.currentTimeMillis();
 		// // System.out.println(stop - start);
@@ -135,8 +133,8 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		scanner = new Scanner(new File("../../data/xs/queries.sql"));
-		// scanner = new Scanner(new File("../../data/xxxs/queryTest.sql"));
+		// scanner = new Scanner(new File("../../data/xs/queries.sql"));
+		scanner = new Scanner(new File("../../data/xs/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
 

@@ -886,7 +886,7 @@ public class Optimizer {
 			// int startingIndex = 0;
 
 			String bestOrder = bestOrders.remove(); // String in the best order for table joinings
-			// System.out.println("best Order is " + bestOrder); 
+			System.out.println("best Order is " + bestOrder); 
 			char table1 = bestOrder.charAt(0);
 
 			// columns to keep

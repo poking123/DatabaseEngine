@@ -53,7 +53,8 @@ public class ProjectAndSum implements Iterator<Queue<int[]>>{
 			for (int i = 0; i < sums.length - 1; i++) {
 				sb.append(",");
 			}
-			return sb.toString();
+			return "no results";
+			// return sb.toString();
 		}
 		
 	

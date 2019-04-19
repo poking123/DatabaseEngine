@@ -48,7 +48,7 @@ public class Filter extends RAOperation {
 			Queue<int[]> rowsToReturn = new LinkedList<>();
 			// System.out.println("input is " + input.size());
 			if (input.isEmpty()) {
-				System.out.println("filter input is empty");
+				// System.out.println("filter input is empty");
 				return rowsToReturn;
 			} else {
 				// System.out.println("filter - testing ");

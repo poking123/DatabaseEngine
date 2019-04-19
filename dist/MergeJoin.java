@@ -119,7 +119,8 @@ public class MergeJoin extends RAOperation {
 						dis1Row[i] = dis1.readInt();
 					}
 					dis1Value = dis1Row[this.table1JoinCol];
-					dis1Queue.add(dis1Row);
+					dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+					dis1Row = null;
 					if (dis1.available() == 0) {
 						this.table1Done = true;
 					} else {
@@ -131,7 +132,8 @@ public class MergeJoin extends RAOperation {
 						dis2Row[i] = dis2.readInt();
 					}
 					dis2Value = dis2Row[this.table2JoinCol];
-					dis2Queue.add(dis2Row);
+					dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+					dis2Row = null;
 					if (dis2.available() == 0) {
 						this.table2Done = true;
 					} else {
@@ -180,8 +182,7 @@ public class MergeJoin extends RAOperation {
 
 				try {
 					if (!table1Done && !table2Done) {
-						// System.out.println("dis1Value: " + dis1Value);
-						// System.out.println("dis2Value: " + dis2Value);
+						
 						// System.out.println("table1Cols is " + this.table1Cols);
 						// System.out.println("table2Cols is " + this.table2Cols);
 						
@@ -196,7 +197,8 @@ public class MergeJoin extends RAOperation {
 								if (dis1.available() == 0) table1Done = true;
 								// new dis1Value
 								dis1Value = dis1Row[this.table1JoinCol];
-								dis1Queue.add(dis1Row);
+								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+								dis1Row = null;
 							}
 							// moves dis2Value up to dis1Value
 							while (!table2Done && dis2Value < dis1Value) {
@@ -208,10 +210,29 @@ public class MergeJoin extends RAOperation {
 								if (dis2.available() == 0) table2Done = true;
 								// new dis2Value
 								dis2Value = dis2Row[this.table2JoinCol];
-								dis2Queue.add(dis2Row);
+								dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+								dis2Row = null;
+							}
+						}
+
+						// if table 2 is done reading, we will have left the above while loop immediately
+						// so we have to finish reading table1 to get dis1Value = dis2Value
+						if (!table1Done && (dis1Value != dis2Value)) {
+							while (!table1Done && dis1Value < dis2Value) {
+								this.dis1Queue.clear();
+								int[] dis1Row = new int[this.table1Cols];
+								for (int i = 0; i < this.table1Cols; i++) {
+									dis1Row[i] = dis1.readInt();
+								}
+								if (dis1.available() == 0) table1Done = true;
+								// new dis1Value
+								dis1Value = dis1Row[this.table1JoinCol];
+								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+								dis1Row = null;
 							}
 						}
 						
+						// if we're still not equal - we don't need to check anymore - break
 						if (dis1Value != dis2Value) {
 							this.noRows = true;
 							break;
@@ -219,6 +240,9 @@ public class MergeJoin extends RAOperation {
 						
 						// Boths values are equal
 						// add same join col rows to dis1Queue
+
+						// We want to get the next values of dis1 with the same (equal) value
+						// we need a value to compare it first
 						int[] dis1Row = new int[this.table1Cols];
 						if (!table1Done) {
 							for (int i = 0; i < this.table1Cols; i++) {
@@ -231,9 +255,8 @@ public class MergeJoin extends RAOperation {
 							dis1Row = dis1Queue.remove();
 						}
 						
-						
+						// while our compare value is equal, we add it to the queue and get the next value
 						while (dis1Row[this.table1JoinCol] == dis1Value) {
-							
 							// System.out.println("Added table 1 row");
 							// print(dis1Row);
 							dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
@@ -249,14 +272,18 @@ public class MergeJoin extends RAOperation {
 								break;
 							}
 						}
-						if (dis1Row[this.table1JoinCol] == dis1Value) {
+						// After we're done reading the last value, we don't know if it looped and added itself to the queue
+						// or if the last value has a different value
+						if (dis1Row[this.table1JoinCol] == dis1Value) { // no last value
 							dis1HolderRow = null;
-						} else {
+						} else { // we have a last value with a different value
 							dis1HolderRow = dis1Row;
 						}
 						
 						
 						// add same join col rows to dis2Queue
+						// We want to get the next values of dis1 with the same (equal) value
+						// we need a value to compare it first
 						int[] dis2Row = new int[this.table2Cols];
 						if (!table2Done) {
 							for (int i = 0; i < this.table2Cols; i++) {
@@ -269,6 +296,7 @@ public class MergeJoin extends RAOperation {
 							dis2Row = dis2Queue.remove();
 						}
 						
+						// while our compare value is equal, we add it to the queue and get the next value
 						while (dis2Row[this.table2JoinCol] == dis2Value) {
 							dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
 							if (!table2Done) {
@@ -282,9 +310,11 @@ public class MergeJoin extends RAOperation {
 								break;
 							}
 						}
-						if (dis2Row[this.table2JoinCol] == dis2Value) {
+						// After we're done reading the last value, we don't know if it looped and added itself to the queue
+						// or if the last value has a different value
+						if (dis2Row[this.table2JoinCol] == dis2Value) { // no last value
 							dis2HolderRow = null;
-						} else {
+						} else { // we have a last value with a different value
 							dis2HolderRow = dis2Row;
 						}
 
@@ -316,7 +346,6 @@ public class MergeJoin extends RAOperation {
 								// 	newRow[i] = oldRow[this.colsToKeep[i]];
 								// }
 								// rowsToReturn.add(newRow);
-
 								rowsToReturn.add(combineRows(dis1Queue.remove(), dis2Queue.remove()));
 							}
 
@@ -335,7 +364,8 @@ public class MergeJoin extends RAOperation {
 								if (dis1.available() == 0) table1Done = true;
 								// new dis1Value
 								dis1Value = dis1Row[this.table1JoinCol];
-								dis1Queue.add(dis1Row);
+								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+								dis1Row = null;
 							}
 
 							if (dis1Value == dis2Value) {
@@ -368,7 +398,8 @@ public class MergeJoin extends RAOperation {
 								if (dis2.available() == 0) table2Done = true;
 								// new dis2Value
 								dis2Value = dis2Row[this.table2JoinCol];
-								dis2Queue.add(dis2Row);
+								dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+								dis2Row = null;
 							}
 
 
@@ -407,9 +438,9 @@ public class MergeJoin extends RAOperation {
 
 		public void makeCombinations(Queue<int[]> rowsToReturn) {
 			int[] dis1Row;
-			int[] dis2Row;
+			// int[] dis2Row;
+			// System.out.println("dis1Queue size is " + dis1Queue.size());
 			while (!dis1Queue.isEmpty()) {
-				// System.out.println("dis1Queue size is " + dis1Queue.size());
 				dis1Row = dis1Queue.remove();
 				// System.out.println("dis1Row:");
 				// for (int i : dis1Row)
@@ -418,7 +449,10 @@ public class MergeJoin extends RAOperation {
 				// System.out.println("dis2Rows:");
 				Iterator<int[]> dis2QueueItr = dis2Queue.iterator();
 				while (dis2QueueItr.hasNext()) {
-					dis2Row = dis2QueueItr.next();
+					// dis2Row = dis2QueueItr.next();
+
+
+
 					// for (int i : dis2Row)
 					// 	System.out.print(i + " ");
 					// System.out.println();
@@ -432,7 +466,8 @@ public class MergeJoin extends RAOperation {
 					// }
 					// rowsToReturn.add(newRow);
 
-					rowsToReturn.add(combineRows(dis1Row, dis2Row));
+					rowsToReturn.add(combineRows(dis1Row, dis2QueueItr.next()));
+
 				}
 			}
 		}
@@ -458,13 +493,11 @@ public class MergeJoin extends RAOperation {
 				} else if (table == 2) {
 					this.table2Cols = tableRows.peek().length;
 					tableJoinCol = this.table2JoinCol;
-					// System.out.println("In table 2");
 				}
 				
 				
 				TreeMap<Integer, Queue<int[]>> columnValueToRowsMap = new TreeMap<>();
 				while (!tableRows.isEmpty()) { // writes all rows to map
-					// System.out.println("writes all rows to map");
 					Queue<int[]> valueRows = new LinkedList<>();
 					int[] tableRow = tableRows.remove();
 					int tableJoinColValue = tableRow[tableJoinCol];
@@ -477,21 +510,22 @@ public class MergeJoin extends RAOperation {
 				
 				// writes the sorted keyset
 				while (!columnValueToRowsMap.isEmpty()) {
-					// System.out.println("writes the sorted keyset");
 					int key = columnValueToRowsMap.firstKey();
 					Queue<int[]> tableSortedRows = columnValueToRowsMap.get(key);
 					while (!tableSortedRows.isEmpty()) {
 						int[] tableSortedRow = tableSortedRows.remove();
 						for (int i : tableSortedRow) {
 							tempDOS.writeInt(i);
-							// System.out.print(i + " ");
 						}
-						// System.out.println();
 					}
 					columnValueToRowsMap.remove(key);
 				}
 				tempDOS.close();
+
+				// done with columnValueToRowsMap
+				columnValueToRowsMap = null;
 			}
+			
 
 			if (holder1.size() == 0) return "noRows";
 			
@@ -501,10 +535,12 @@ public class MergeJoin extends RAOperation {
 					if (holder1.size() == 1) {
 						holder2.add(holder1.remove());
 					} else {
-						String table1 = holder1.remove();
-						String table2 = holder1.remove();
+						// String table1 = holder1.remove();
+						// String table2 = holder1.remove();
 						
-						mergeFiles(table1, table2, table);
+						// mergeFiles(table1, table2, table);
+
+						mergeFiles(holder1.remove(), holder1.remove(), table);
 					}
 				}
 				
@@ -555,7 +591,6 @@ public class MergeJoin extends RAOperation {
 				}
 				
 				if (writeTable2) {
-
 					for (int i = 0; i < tableCols; i++) {
 						int value = dis2.readInt();
 						table2TempRow[i] = value;
@@ -596,13 +631,13 @@ public class MergeJoin extends RAOperation {
 			
 			if (table1Done) {
 				// System.out.println("Writing rest of dis2");
-				for (int i : table2TempRow) {
+				for (int i : table2TempRow) { // write what's currently in table2Row
 					// System.out.println(i + " ");
 					tempDOS.writeInt(i);
 				}
 				// System.out.println();
 
-				while (dis2.available() != 0) {
+				while (dis2.available() != 0) { // write what's left in dis2
 					for (int i = 0; i < tableCols; i++) {
 						int value = dis2.readInt();
 						// System.out.print(value + " ");
@@ -612,13 +647,13 @@ public class MergeJoin extends RAOperation {
 				}
 			} else if (table2Done) {
 				// System.out.println("Writing rest of dis1");
-				for (int i : table1TempRow) {
+				for (int i : table1TempRow) { // write what's currently in table1Row
 					// System.out.print(i + " ");
 					tempDOS.writeInt(i);
 				}
 				// System.out.println();
 
-				while (dis1.available() != 0) {
+				while (dis1.available() != 0) { // write what's left in dis1
 					for (int i = 0; i < tableCols; i++) {
 						int value = dis1.readInt();
 						// System.out.print(value + " ");
@@ -633,22 +668,26 @@ public class MergeJoin extends RAOperation {
 
 		public int[] combineRows(int[] row1, int[] row2) {
 			int[] combinedRow = new int[row1.length + row2.length];
-			int i = 0;
-			int totalIndex = 0;
+
+			System.arraycopy(row1, 0, combinedRow, 0, row1.length);
+			System.arraycopy(row2, 0, combinedRow, row1.length, row2.length);
+
+			// int i = 0;
+			// int totalIndex = 0;
 			
-			while (i < row1.length) {
-				combinedRow[totalIndex] = row1[totalIndex];
-				i++;
-				totalIndex++;
-			}
+			// while (i < row1.length) {
+			// 	combinedRow[totalIndex] = row1[totalIndex];
+			// 	i++;
+			// 	totalIndex++;
+			// }
 			
-			i = 0;
+			// i = 0;
 			
-			while (i < row2.length) {
-				combinedRow[totalIndex] = row2[i];
-				i++;
-				totalIndex++;
-			}
+			// while (i < row2.length) {
+			// 	combinedRow[totalIndex] = row2[i];
+			// 	i++;
+			// 	totalIndex++;
+			// }
 			
 			return combinedRow;
 		}

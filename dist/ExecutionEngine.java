@@ -9,6 +9,8 @@ public class ExecutionEngine {
 		Deque<RAOperation> finalDeque = new ArrayDeque<>();
 		
 		while (!predicatesQueue.isEmpty()) {
+			
+
 			Queue<RAOperation> tableQueue = tablesQueue.remove();
 			Queue<Predicate> predicateQueue = predicatesQueue.remove();
 			
