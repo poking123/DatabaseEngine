@@ -8,8 +8,10 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 50000;
+	static final int bufferSize = 500000;
 	static int tempNumber = 0;
+
+	//static int finalNumber = 0;
 
 	public static void main(String[] args) throws IOException {
 		// long totalStart = System.currentTimeMillis();
@@ -20,10 +22,10 @@ public class DatabaseEngine {
 		Scanner scanner = new Scanner(System.in);
 		
 		// Get the CSV files
-		// String CSVFiles = loader.getCSVFiles(scanner);
+		String CSVFiles = loader.getCSVFiles(scanner);
 		// String CSVFiles = "../../data/xxxs/B.csv,../../data/xxxs/C.csv,../../data/xxxs/A.csv,../../data/xxxs/D.csv,../../data/xxxs/E.csv";
 		// String CSVFiles = "../../data/xxs/B.csv,../../data/xxs/C.csv,../../data/xxs/A.csv,../../data/xxs/D.csv,../../data/xxs/E.csv,../../data/xxs/F.csv";
-		String CSVFiles = "../../data/xs/B.csv,../../data/xs/C.csv,../../data/xs/A.csv,../../data/xs/D.csv,../../data/xs/E.csv,../../data/xs/F.csv";
+		// String CSVFiles = "../../data/xs/B.csv,../../data/xs/C.csv,../../data/xs/A.csv,../../data/xs/D.csv,../../data/xs/E.csv,../../data/xs/F.csv";
 		// String CSVFiles = "../../data/s/B.csv,../../data/s/C.csv,../../data/s/A.csv,../../data/s/D.csv,../../data/s/E.csv,../../data/s/F.csv";
 		// m size dataset
 		// String CSVFiles = "../../data/m/A.csv,../../data/m/B.csv,../../data/m/C.csv,../../data/m/D.csv,../../data/m/E.csv,../../data/m/F.csv,";
@@ -69,49 +71,52 @@ public class DatabaseEngine {
 		// RAOperation scanF = new Scan("F.dat");
 
 		// RAOperation projD = new Project(scanD, new int[]{0, 1, 2});
-		// RAOperation projA = new Project(scanA, new int[]{1, 3});
-		// RAOperation projF = new Project(scanF, new int[]{0, 1, 4});
+		// RAOperation projA = new Project(scanA, new int[]{3, 43});
+		// RAOperation projF = new Project(scanF, new int[]{0, 2, 4});
 		// RAOperation projE = new Project(scanE, new int[]{1, 4});
-		// RAOperation projB = new Project(scanB, new int[]{0, 1});
+		// RAOperation projC = new Project(scanC, new int[]{1, 2});
 
+		// tableQueue.add(projC);
 		// tableQueue.add(projD);
 		// tableQueue.add(projA);
 		// tableQueue.add(projF);
-		// tableQueue.add(projE);
-		// tableQueue.add(projB);
+		// // tableQueue.add(projE);
+		// // tableQueue.add(projB);
 
 		// Queue<Predicate> predicateQueue = new LinkedList<>();
 		
 		// // // Predicate ce = new MergeJoinPredicate(1, 0);
 
-		// ArrayList<int[]> DList = new ArrayList<>();
-		// int[] dPred = {1, 1, 121};
-		// DList.add(dPred);
-		// Predicate sigmaD = new FilterPredicate(DList);
+		// ArrayList<int[]> CList = new ArrayList<>();
+		// int[] cPred = {0, 2, -1};
+		// CList.add(cPred);
+		// Predicate sigmaC = new FilterPredicate(CList);
 
 		
 
-		// Predicate a = new MergeJoinPredicate(0, 1);
-		// Predicate f = new MergeJoinPredicate(1, 0);
-		// Predicate e = new MergeJoinPredicate(6, 0);
-		// Predicate b = new MergeJoinPredicate(3, 0);
+		// Predicate cd = new MergeJoinPredicate(1, 2);
+		// Predicate a = new MergeJoinPredicate(2, 0);
+		// Predicate f = new MergeJoinPredicate(3, 0);
+		// // Predicate b = new MergeJoinPredicate(3, 0);
 
-		// ArrayList<int[]> EList = new ArrayList<>();
-		// int[] ePred = {1, 0, -8144};
-		// EList.add(ePred);
-		// Predicate sigmaE = new FilterPredicate(EList);
+		// // ArrayList<int[]> EList = new ArrayList<>();
+		// // int[] ePred = {1, 0, -8144};
+		// // EList.add(ePred);
+		// // Predicate sigmaE = new FilterPredicate(EList);
 
 
 		// // // Predicate e = new EquijoinPredicate(36, 1, true);
 		// // // Predicate d = new EquijoinPredicate(56, 1, true);
 		// // // Predicate a = new EquijoinPredicate(10, 2, true);
 		
-		// predicateQueue.add(sigmaD);
-		// predicateQueue.add(a);		
+		// predicateQueue.add(sigmaC);
+		// predicateQueue.add(cd);		
+		// predicateQueue.add(a);
 		// predicateQueue.add(f);
-		// predicateQueue.add(sigmaE);
-		// predicateQueue.add(e);
-		// predicateQueue.add(b);
+
+
+		// // predicateQueue.add(e);
+		// // predicateQueue.add(b);
 		
 		
 		// // predicateQueue.add(d);
@@ -124,7 +129,7 @@ public class DatabaseEngine {
 
 		// // int[] colsToSum = {7, 2, 11};
 
-		// int[] colsToSum = {7, 2, 11};
+		// int[] colsToSum = {0, 1};
 		// executionEngine.executeQuery(tablesQueue, predicatesQueue, finalPredicateQueue, colsToSum);
 		// // long stop = System.currentTimeMillis();
 		// // System.out.println(stop - start);
@@ -134,7 +139,7 @@ public class DatabaseEngine {
 		//Scanner queryScanner = new Scanner(System.in);
 		
 		// scanner = new Scanner(new File("../../data/xs/queries.sql"));
-		scanner = new Scanner(new File("../../data/xs/queryTest.sql"));
+		// scanner = new Scanner(new File("../../data/xs/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
 
@@ -184,6 +189,7 @@ public class DatabaseEngine {
 		// System.out.println("Total Optimizer Time " + totalOptimizerTime);
 		// System.out.println("Total Execution Time " + totalExecutionTime);
 		// System.out.println("Total Time: " + (totalStop - totalStart));
+		
 	}
 }
 

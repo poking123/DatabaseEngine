@@ -13,7 +13,6 @@ import java.util.Arrays;
 
 public class Optimizer {
     
-	private Deque<String[]> disjointDeque;
 	private HashMap<Character, Queue<String[]>> predicateJoinQueueMap;
 	
 	private HashMap<String, String> bestOrderMap;
@@ -30,7 +29,6 @@ public class Optimizer {
 	private HashMap<Character, HashSet<Character>> possibleJoinsMap;
 	
 	public Optimizer() {
-		disjointDeque = new ArrayDeque<>();
 		predicateJoinQueueMap = new HashMap<>();
 		
 		bestOrderMap = new HashMap<>();
@@ -183,8 +181,6 @@ public class Optimizer {
 			// index 1 - <
 			// index 2 - >
 			
-			
-			
 			Iterator<int[]> predicateDataItr = predicateDataList.iterator();
 
 			HashMap<Integer, ArrayList<int[]>> columnToPredicate = new HashMap<>();
@@ -195,12 +191,13 @@ public class Optimizer {
 
 			reducePredicates(columnToPredicate); // reduces the predicates for each column to 2 or less predicates
 
+			
+
+
 			// Calculate the estimated number of rows after the predicates
 			int tableNumOfRows = Catalog.getRows(tableName + ".dat");
 			// System.out.println("Original NumOfRows is " + tableNumOfRows);
 			double estimateRows = tableNumOfRows;
-			// System.out.println("ColumnToPredicate:");
-			// System.out.println(columnToPredicate);
 
 			HashSet<Integer> columnsPredicateKeySet = new HashSet<>(columnToPredicate.keySet());
 			Iterator<Integer> columnsPredicateKeySetItr = columnsPredicateKeySet.iterator();
@@ -214,20 +211,24 @@ public class Optimizer {
 					int operator = predData[0];
 					int compareValue = predData[1];
 					
-					int currPredEstimate = estimatePredicateRows(tableNumOfRows, min, max, uniqueColValues, operator, compareValue);
+					double currPredEstimate = estimatePredicateRows(tableNumOfRows, min, max, uniqueColValues, operator, compareValue);
 					// System.out.println("estimate of 1st sigma is " + currPredEstimate);
 					estimateRows *= (double) currPredEstimate / tableNumOfRows;
 				}
 			}
 			int intEstimateRows = (int) Math.round(estimateRows);
-			// System.out.println("New Estimate NumOfRows is " + intEstimateRows);
+			///
+			// System.out.println("tableName is " + tableName);
+			// System.out.println("tableNumOfRows is " + tableNumOfRows);
+			// System.out.println("intEstimateRows is " + intEstimateRows);
+			///
 			int removedRows =  tableNumOfRows - intEstimateRows;
 
 			int[] uniqueCols = Catalog.getUniqueColumns(tableName + ".dat");
 			uniqueCols = Arrays.copyOf(uniqueCols, uniqueCols.length);
-			for (int i = 0; i < uniqueCols.length; i++) {
+			for (int i = 0; i < uniqueCols.length; i++) { // removes the amount of of removed rows from the number of unique values for each column
 				int newValue = uniqueCols[i] - removedRows;
-				uniqueCols[i] = (newValue <= 0) ? 1 : newValue;
+				uniqueCols[i] = (newValue <= 0) ? 1 : newValue; // makes sure the number of unique values is at least 1
 			}
 
 			TableMetaData tmd = new TableMetaData(Catalog.getHeader(tableName + ".dat"));
@@ -236,196 +237,6 @@ public class Optimizer {
 			tmd.setColumns(Catalog.getColumns(tableName + ".dat"));
 
 			Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-
-			// TreeSet<Integer> equalValues = new TreeSet<>();
-			// TreeSet<Integer> lessThanValues = new TreeSet<>();
-			// TreeSet<Integer> greaterThanValues = new TreeSet<>();
-
-			// // while (predicateDataItr.hasNext()) {
-			// // 	int[] data = predicateDataItr.next();
-			// // 	// column
-			// // 	int column = data[0];
-			// // 	// counts operator
-			// // 	int operator = data[1];
-			// // 	operatorCounter[operator]++;
-			// // 	// compare value
-			// // 	int compareValue = data[2];
-			// // 	switch (operator) {
-			// // 		case 0:
-			// // 			equalValues.add(compareValue);
-			// // 			break;
-			// // 		case 1:
-			// // 			lessThanValues.add(compareValue);
-			// // 			break;
-			// // 		case 2:
-			// // 			greaterThanValues.add(compareValue);
-			// // 			break;
-			// // 	}
-				
-			// // 	if (equalValues.size() > 1) {
-			// // 		// no rows will be returned
-			// // 		TableMetaData tmd = new TableMetaData(header);
-			// // 		tmd.setRows(0);
-			// // 		Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 	} else if (equalValues.size() == 1) { // One equals value
-			// // 		int equalValue = equalValues.first();
-			// // 		if (lessThanValues.size() > 0) {
-			// // 			if (equalValue >= lessThanValues.last()) {
-			// // 				// no rows will be returned
-			// // 				TableMetaData tmd = new TableMetaData(header);
-			// // 				// int numOfCols = Catalog.getColumns(tableName + ".dat");
-			// // 				tmd.setRows(0);
-			// // 				Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 			}
-			// // 		} else if (greaterThanValues.size() > 0) {
-			// // 			if (equalValue <= greaterThanValues.first()) {
-			// // 				// no rows will be returned
-			// // 				TableMetaData tmd = new TableMetaData(header);
-			// // 				// int numOfCols = Catalog.getColumns(tableName + ".dat");
-			// // 				tmd.setRows(0);
-			// // 				Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 			}
-			// // 		} else { // only one equals value
-			// // 			// estimate number of rows
-			// // 			TableMetaData tmd = new TableMetaData(header);
-			// // 			int numOfRows = Catalog.getRows(tableName + ".dat");
-			// // 			int uniqueValues = Catalog.getUnique(tableName + ".dat", column);
-						
-			// // 			int estimateRows = numOfRows / uniqueValues;
-			// // 			int removedRows = numOfRows - estimateRows;
-						
-			// // 			// double percentage = (double) estimateRows / numOfRows;
-						
-			// // 			int[] uniqueCols = Catalog.getUniqueColumns(tableName + ".dat");
-			// // 			uniqueCols = Arrays.copyOf(uniqueCols, uniqueCols.length);
-			// // 			// estimates new number of rows
-			// // 			for (int i = 0; i < uniqueCols.length; i++) {
-			// // 				// int value = (int) Math.round(uniqueCols[i] * percentage);
-			// // 				// if (value != 0) {
-			// // 				// 	uniqueCols[i] = value;
-			// // 				// } else {
-			// // 				// 	uniqueCols[i] = 1;
-			// // 				// }
-			// // 				int newValue = uniqueCols[i] - removedRows;
-			// // 				uniqueCols[i] = (newValue <= 0) ? 1 : newValue;
-			// // 			}
-			// // 			uniqueCols[column] = 1;
-
-			// // 			int numOfCols = Catalog.getColumns(tableName + ".dat");
-			// // 			tmd.setColumns(numOfCols);
-			// // 			tmd.setRows(estimateRows);
-			// // 			tmd.setUnique(uniqueCols);
-
-						
-						
-			// // 			Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 		}
-			// // 	} else { // no equals
-			// // 		if (lessThanValues.size() > 0 && greaterThanValues.size() > 0) {
-			// // 			// estimate number of rows
-			// // 			TableMetaData tmd = new TableMetaData(header);
-			// // 			int numOfRows = Catalog.getRows(tableName + ".dat");
-			// // 			int min = Catalog.getMin(tableName + ".dat", column);
-			// // 			int max = Catalog.getMax(tableName + ".dat", column);
-			// // 			int uniqueValues = Catalog.getUnique(tableName + ".dat", column);
-						
-			// // 			int estimateRows = estimatePredicateRows(numOfRows, min, max, uniqueValues, 1, lessThanValues.last()) * estimatePredicateRows(numOfRows, min, max, uniqueValues, 2, greaterThanValues.first()) / numOfRows;
-			// // 			int removedRows = numOfRows - estimateRows;
-						
-			// // 			// double percentage = (double) estimateRows / numOfRows;
-						
-			// // 			int[] uniqueCols = Catalog.getUniqueColumns(tableName + ".dat");
-			// // 			uniqueCols = Arrays.copyOf(uniqueCols, uniqueCols.length);
-						
-			// // 			for (int i = 0; i < uniqueCols.length; i++) {
-			// // 				// int value = (int) Math.round(uniqueCols[i] * percentage);
-			// // 				// if (value != 0) {
-			// // 				// 	uniqueCols[i] = value;
-			// // 				// } else {
-			// // 				// 	uniqueCols[i] = 1;
-			// // 				// }
-			// // 				int newValue = uniqueCols[i] - removedRows;
-			// // 				uniqueCols[i] = (newValue <= 0) ? 1 : newValue;
-			// // 			}
-
-			// // 			int numOfCols = Catalog.getColumns(tableName + ".dat");
-			// // 			tmd.setColumns(numOfCols);
-			// // 			tmd.setRows(estimateRows); // sets the number of rows
-			// // 			tmd.setUnique(uniqueCols);
-						
-			// // 			Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 		} else if (lessThanValues.size() > 0) {
-			// // 			// estimate number of rows
-			// // 			TableMetaData tmd = new TableMetaData(header);
-			// // 			int numOfRows = Catalog.getRows(tableName + ".dat");
-			// // 			int min = Catalog.getMin(tableName + ".dat", column);
-			// // 			int max = Catalog.getMax(tableName + ".dat", column);
-			// // 			int uniqueValues = Catalog.getUnique(tableName + ".dat", column);
-						
-			// // 			int estimateRows = estimatePredicateRows(numOfRows, min, max, uniqueValues, 1, lessThanValues.last());
-			// // 			int removedRows = numOfRows - estimateRows;
-
-			// // 			// double percentage = (double) estimateRows / numOfRows;
-						
-			// // 			int[] uniqueCols = Catalog.getUniqueColumns(tableName + ".dat");
-			// // 			uniqueCols = Arrays.copyOf(uniqueCols, uniqueCols.length);
-						
-			// // 			for (int i = 0; i < uniqueCols.length; i++) {
-			// // 				// int value = (int) Math.round(uniqueCols[i] * percentage);
-			// // 				// if (value != 0) {
-			// // 				// 	uniqueCols[i] = value;
-			// // 				// } else {
-			// // 				// 	uniqueCols[i] = 1;
-			// // 				// }
-			// // 				int newValue = uniqueCols[i] - removedRows;
-			// // 				uniqueCols[i] = (newValue <= 0) ? 1 : newValue;
-			// // 			}
-
-			// // 			int numOfCols = Catalog.getColumns(tableName + ".dat");
-			// // 			tmd.setColumns(numOfCols);
-			// // 			tmd.setRows(estimateRows); // sets the number of rows
-			// // 			tmd.setUnique(uniqueCols);
-
-			// // 			System.out.println("added " + Character.toLowerCase(tableName));
-			// // 			System.out.println("uniqueCols length is " + uniqueCols.length);
-						
-			// // 			Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 		} else if (greaterThanValues.size() > 0) {
-			// // 			// estimate number of rows
-			// // 			TableMetaData tmd = new TableMetaData(header);
-			// // 			int numOfRows = Catalog.getRows(tableName + ".dat");
-			// // 			int min = Catalog.getMin(tableName + ".dat", column);
-			// // 			int max = Catalog.getMax(tableName + ".dat", column);
-			// // 			int uniqueValues = Catalog.getUnique(tableName + ".dat", column);
-						
-			// // 			int estimateRows = estimatePredicateRows(numOfRows, min, max, uniqueValues, 1, greaterThanValues.first());
-			// // 			int removedRows = numOfRows - estimateRows;
-						
-			// // 			// double percentage = (double) estimateRows / numOfRows;
-						
-			// // 			int[] uniqueCols = Catalog.getUniqueColumns(tableName + ".dat");
-			// // 			uniqueCols = Arrays.copyOf(uniqueCols, uniqueCols.length);
-						
-			// // 			for (int i = 0; i < uniqueCols.length; i++) {
-			// // 				// int value = (int) Math.round(uniqueCols[i] * percentage);
-			// // 				// if (value != 0) {
-			// // 				// 	uniqueCols[i] = value;
-			// // 				// } else {
-			// // 				// 	uniqueCols[i] = 1;
-			// // 				// }
-			// // 				int newValue = uniqueCols[i] - removedRows;
-			// // 				uniqueCols[i] = (newValue <= 0) ? 1 : newValue;
-			// // 			}
-
-			// // 			int numOfCols = Catalog.getColumns(tableName + ".dat");
-			// // 			tmd.setColumns(numOfCols);
-			// // 			tmd.setRows(estimateRows); // sets the number of rows
-			// // 			tmd.setUnique(uniqueCols);
-						
-			// // 			Catalog.addData(Character.toLowerCase(tableName) + ".dat", tmd);
-			// // 		}
-			// // 	}	
-			// // }
 			
 			// and lowercase the table name 
 			fromData = fromData.replace(tableName, Character.toLowerCase(tableName));
@@ -434,14 +245,14 @@ public class Optimizer {
 		return fromData;
 	}
 	
-	public int estimatePredicateRows(int tableNumRows, int min, int max, int uniqueColValues, int operator, int compareValue) {
+	public double estimatePredicateRows(int tableNumRows, int min, int max, int uniqueColValues, int operator, int compareValue) {
 		switch (operator) {
 			case 0: // equals
-				return tableNumRows / uniqueColValues;
-			case 2: // less than
-				return tableNumRows * (max - compareValue) / (max - min);
-			case 1: // greater than
-				return tableNumRows * (compareValue - min) / (max - min);
+				return (double) tableNumRows / uniqueColValues;
+			case 2: // greater than
+				return (double) tableNumRows * (max - compareValue) / (max - min);
+			case 1: // less than
+				return (double) tableNumRows * (compareValue - min) / (max - min);
 			default:
 				return 0; // should not get here
 		}
@@ -467,15 +278,19 @@ public class Optimizer {
 		HashMap<Character, ArrayList<int[]>> tablePredicateMap = andData.getTablePredicateMap();
 		// Calculates new data for tables with predicates
 		// and switches values to lowercase in fromData
-		String newFromData = estimatePredicates(fromData, tablePredicateMap);
+
+		// Commenting out estimatePredicate because we don't need it /////////////////////////////////////////////////////////////////////////
+		//String newFromData = estimatePredicates(fromData, tablePredicateMap);
 
 		// Loads pairs of 2 into the costMap (passes in both orders)
-		loadInPairs(newFromData); // loads in the all capital version
+		// loadInPairs(newFromData); // loads in the all capital version ///////////////////////////////////////////////////////
+		loadInPairs(fromData); // loads in the all capital version
 		
 		// Selinger's Algorithm for the best join ordering
 		// System.out.println("fromData: " + newFromData);
 
-		String bestOrder = computeBest(newFromData);
+		// String bestOrder = computeBest(newFromData); /////////////////////////////////////////////////////////////////
+		String bestOrder = computeBest(fromData);
 
 		char c1 = bestOrder.charAt(0);
 		char c2 = bestOrder.charAt(1);
@@ -496,21 +311,21 @@ public class Optimizer {
 		if (bestOrderMap.containsKey(rels))
 			return bestOrderMap.get(rels);
 		
-		int bestCost = Integer.MAX_VALUE;
+			float bestCost = Long.MAX_VALUE;
 		String bestOrder = rels;
 		
 		for (char c : rels.toCharArray()) {
 			// System.out.println("The char c is " + c);
 			String internalOrder = computeBest(rels.replace(Character.toString(c), ""));
 			// System.out.println("internalOrder is " + internalOrder);
-			int cost1 = cost(c + internalOrder);
-			int cost2 = cost(internalOrder + c);
+			float cost1 = cost(c + internalOrder);
+			float cost2 = cost(internalOrder + c);
 
 			// System.out.println("cost for " + (c + internalOrder) + " is " + cost1);
 			// System.out.println("cost for " + (internalOrder + c) + " is " + cost2);
 
 			String internalBestOrder = "";
-			int internalBestCost = -1;
+			float internalBestCost = -1;
 			if (cost1 < cost2) { // checks the two costs, and saves the better order
 				internalBestOrder = c + internalOrder;
 				internalBestCost = cost1;
@@ -534,150 +349,272 @@ public class Optimizer {
 		// System.out.println(bestOrderMap);
 		return bestOrder;
 	}
-	
-	
-	public int cost(String tables) {
-		// System.out.println("Calculating costs of " + tables);
-		// String tables is just a string, where each character is a table
-		char[] tablesCharArray = tables.toCharArray();
-		String table1 = Character.toString(tablesCharArray[0]);
-		
-		String table1FileName = table1 + ".dat";
-		
-		int table1NumRows = Catalog.getRows(table1FileName);
-		int table1NumCols = Catalog.getColumns(table1FileName);
 
-		int[] table1UniqueColumns = Arrays.copyOf(Catalog.getUniqueColumns(table1FileName), table1NumCols);
+	// NEW COST - Global Method
+	public float cost(String tables) {
+		// System.out.println("tables is " + tables);
+		float product = 1;
+		float totalSum = 0;
 		
-		StringBuilder table1HeaderSB = new StringBuilder(Catalog.getHeader(table1FileName));
+		HashSet<Character> joinedTables = new HashSet<>();
+		// join another table - add the product to totalSum
+		for (int i = 0; i < tables.length(); i++) {
+			char currTable = tables.charAt(i);
+			joinedTables.add(currTable); // adds the table to the set of joined tables
 
-		table1 = table1.toUpperCase();
-		
-		// goes through table string
-		for (int i = 1; i < tablesCharArray.length; i++) {
-			char table2 = tablesCharArray[i];
-			String table2FileName = table2 + ".dat"; // uses this to get metadata
-			
-			table2 = Character.toUpperCase(table2);
-			
-			char table1JoinTable = ' ';
-			char table2JoinTable = ' ';
-			HashMap<Character, String> equijoinMap = new HashMap<>();
+			// check for predicate
+			String tableName = currTable + ".dat";
+			int tableNumRows = Catalog.getRows(tableName);
+			if (tablePredicateMap.containsKey(currTable)) {
+				ArrayList<int[]> predDataList = tablePredicateMap.get(currTable);
+				for (int[] predData : predDataList) {
+					int column = predData[0];
 
-			// System.out.println("i is " + i);
-			// System.out.println("table1 is " + table1);
-			// System.out.println("table2 is " + table2);
-			
-			// returns the map of the equijoin
-			// and the char of the table in table1 that is a part of the join
-			boolean found = false;
-			for (char c : table1.toCharArray()) {
-				char actualTable = c;
-				if (possibleJoinsMap.get(actualTable).contains(table2)) {
-					table1JoinTable = actualTable;
-					table2JoinTable = table2;
-					found = true;
+					// System.out.println("min is " + Catalog.getMin(tableName, column));
+					// System.out.println("max is " + Catalog.getMax(tableName, column));
+					// System.out.println("operator is " + predData[1]);
+					// System.out.println("compareValue is " + predData[2]);
+					// System.out.println("estimatePredicateRows is " + estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]));
+					// System.out.println("tableNumRows is " + tableNumRows);
+					// System.out.println("before upper product is " + product);
+					// System.out.println("to multiply to product is " + (estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]) / tableNumRows));
+
+					product *= estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]) / tableNumRows;
+					// System.out.println("after upper product is " + product);
 				}
 			}
 
-			if (!found) return Integer.MAX_VALUE;
+			// multiplies by the number of rows in the table
+			product *= tableNumRows;
 
-			for (HashMap<Character, String> map : whereTables) {
-				if (map.containsKey(table1JoinTable) && map.containsKey(table2JoinTable)) {
-					equijoinMap = map;
+			// check for joins if we're not at the first table
+			if (i > 0) {
+				boolean hasJoinPredicate = false;
+				for (HashMap<Character, String> joinMap : whereTables) {
+					char[] joinTables = new char[2];
+					int[] joinColumns = new int[2];
+					int tableNumber = 0;
+					boolean foundMap = false;
+
+					if (joinMap.keySet().contains(currTable)) {
+						foundMap = true;
+						for (char c : joinMap.keySet()) {
+							if (!joinedTables.contains(c)) {
+								foundMap = false;
+								break;
+							}
+							joinTables[tableNumber] = c;
+							String tableAndColumn = joinMap.get(c);
+							joinColumns[tableNumber] = Integer.parseInt(tableAndColumn, 3, tableAndColumn.length(), 10);
+							tableNumber++;
+						}
+					}
+					
+
+					if (foundMap) {
+						hasJoinPredicate = true;
+						// check which columns are keys
+						int table1NumRows = Catalog.getRows(joinTables[0] + ".dat");
+						int table2NumRows = Catalog.getRows(joinTables[1] + ".dat");
+
+						int table1NumUniqueCol = Catalog.getUnique(joinTables[0] + ".dat", joinColumns[0]);
+						int table2NumUniqueCol = Catalog.getUnique(joinTables[1] + ".dat", joinColumns[1]);
+						
+						int minUnique = table1NumUniqueCol < table2NumUniqueCol ? table1NumUniqueCol : table2NumUniqueCol;
+
+						boolean table1IsKey = (table1NumUniqueCol == table1NumRows);
+						boolean table2IsKey = (table2NumUniqueCol == table2NumRows);
+
+						long maxRows = (long) table1NumRows * table2NumRows;
+						int estimateRows = -1;
+						// not sure what are keys
+						if (table1IsKey && table2IsKey) { // both columns are keys
+							estimateRows = (table1NumRows < table2NumRows) ? table1NumRows : table2NumRows;
+						} else if (table1IsKey || table2IsKey) { // one table is a key
+							estimateRows = (table1NumRows > table2NumRows) ? table1NumRows : table2NumRows;
+						} else { // no keys
+							estimateRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
+						}
+						// System.out.println("table1NumRows is " + table1NumRows);
+						// System.out.println("table2NumRows is " + table2NumRows);
+						// System.out.println("estimateRows is " + (float) estimateRows);
+						// System.out.println("max rows is " + maxRows);
+						// System.out.println("non-predicate before product is " + product);
+						// System.out.println("non-predicate to multiply is " + ((float) estimateRows / maxRows));
+						product *= (float) estimateRows / maxRows;
+						// System.out.println("non-predicate after product is " + product);
+					}
 				}
-			}
-			
-			
-			// if (equijoinMap == null) { // no equijoin, so cost is high
-			// 	return Integer.MAX_VALUE;
-			// }
-			
 
-			
-			// use header to get the number of unique values in the right columns
-			String[] table1HeaderArr = table1HeaderSB.toString().split(",");
-			String table1JoinColName = equijoinMap.get(table1JoinTable);
-
-			String table2Header = Catalog.getHeader(table2FileName);
-			String[] table2HeaderArr = table2Header.split(",");
-			String table2JoinColName = equijoinMap.get(table2);
-			
-			// gets integer join columns
-			int table1JoinCol = findIndex(table1HeaderArr, table1JoinColName);
-			int table2JoinCol = findIndex(table2HeaderArr, table2JoinColName);
-			
-			int[] table2UniqueColumns = Arrays.copyOf(Catalog.getUniqueColumns(table2FileName), table2HeaderArr.length);
-			
-			int table1NumUniqueCol = table1UniqueColumns[table1JoinCol];
-			int table2NumUniqueCol = Catalog.getUnique(table2FileName, table2JoinCol);
-			
-			int minUnique = table1NumUniqueCol < table2NumUniqueCol ? table1NumUniqueCol : table2NumUniqueCol;
-			
-			// calculates meta data for current table1
-			int table2NumRows = Catalog.getRows(table2FileName);
-
-			// System.out.println("table1 is " + table1);
-			// System.out.println("table2 is " + table2);
-
-			// System.out.println("table1JoinCol is " + table1JoinCol);
-			// System.out.println("table2JoinCol is " + table2JoinCol);
-
-			// System.out.println("table1NumRows is " + table1NumRows);
-			// System.out.println("table2NumRows is " + table2NumRows);
-
-			// System.out.println("table1NumUniqueCol is " + table1NumUniqueCol);
-			// System.out.println("table2NumUniqueCol is " + table2NumUniqueCol);
-			// System.out.println("minUnique is " + minUnique);
-
-			// int maxRows = table1NumRows * table2NumRows;
-			// estimated rows for joined table
-
-			boolean table1IsKey = table1NumUniqueCol == table1NumRows;
-			boolean table2IsKey = table2NumUniqueCol == table2NumRows;
-
-
-			// not sure what are keys
-			if (table1IsKey && table2IsKey) { // both columns are keys
-				table1NumRows = (table1NumRows < table2NumRows) ? table1NumRows : table2NumRows;
-			} else if (table1IsKey || table2IsKey) { // one table is a key
-				table1NumRows = (table1NumRows > table2NumRows) ? table1NumRows : table2NumRows;
-			} else { // no keys
-				table1NumRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
-			}
-
-
-			// just no keys for now
-			// table1NumRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
-			
-			// System.out.println("New Estimate is " + table1NumRows);
-			
-			
-			if (table1HeaderSB.toString().indexOf(table2JoinCol) < 0) { // table2 join col not is already in table1 header
-				table1HeaderSB.append("," + table2Header); // updates table1 header
+				// add calculated value to totalSum
+				if (hasJoinPredicate) {
+					// System.out.println("product is " + product);
+					totalSum += product;
+				} else {
+					return Float.MAX_VALUE;
+				}
 				
-				table1UniqueColumns = combineRows(table1UniqueColumns, table2UniqueColumns);// updates unique columns
 			}
-			
-			// percentage to decrease number of unique values
-			// double percentage = (double) table1NumRows / maxRows;
-
-			// for (int index = 0; index < table1UniqueColumns.length; index++) {
-			// 	int value = (int) Math.round(table1UniqueColumns[index] * percentage);
-			// 	if (value == 0) { // makes sure no value is 0 so we don't divide by 0
-			// 		table1UniqueColumns[index] = 1;
-			// 	} else {
-			// 		table1UniqueColumns[index] = value;
-			// 	}
-			// }
-			
-			// updates table1 name
-			table1 += table2; 
-			
 		}
-		
-		return table1NumRows;
+
+
+		return totalSum;
 	}
+	
+	// OLD COST //////////////////////////////////////////////////////////////////////////////////
+	// public int cost(String tables) {
+	// 	// System.out.println("Calculating costs of " + tables);
+	// 	// String tables is just a string, where each character is a table
+	// 	char[] tablesCharArray = tables.toCharArray();
+	// 	String table1 = Character.toString(tablesCharArray[0]);
+		
+	// 	String table1FileName = table1 + ".dat";
+		
+	// 	int table1NumRows = Catalog.getRows(table1FileName);
+	// 	int table1NumCols = Catalog.getColumns(table1FileName);
+
+	// 	int[] table1UniqueColumns = Arrays.copyOf(Catalog.getUniqueColumns(table1FileName), table1NumCols);
+		
+	// 	StringBuilder table1HeaderSB = new StringBuilder(Catalog.getHeader(table1FileName));
+
+	// 	table1 = table1.toUpperCase();
+		
+	// 	// goes through table string
+	// 	for (int i = 1; i < tablesCharArray.length; i++) {
+	// 		char table2 = tablesCharArray[i];
+	// 		String table2FileName = table2 + ".dat"; // uses this to get metadata
+			
+	// 		table2 = Character.toUpperCase(table2);
+			
+	// 		char table1JoinTable = ' ';
+	// 		char table2JoinTable = ' ';
+	// 		HashMap<Character, String> equijoinMap = new HashMap<>();
+
+	// 		// System.out.println("i is " + i);
+	// 		// System.out.println("table1 is " + table1);
+	// 		// System.out.println("table2 is " + table2);
+			
+	// 		// returns the map of the equijoin
+	// 		// and the char of the table in table1 that is a part of the join
+	// 		boolean found = false;
+	// 		for (char c : table1.toCharArray()) {
+	// 			char actualTable = c;
+	// 			if (possibleJoinsMap.get(actualTable).contains(table2)) {
+	// 				table1JoinTable = actualTable;
+	// 				table2JoinTable = table2;
+	// 				found = true;
+	// 			}
+	// 		}
+
+	// 		if (!found) return Integer.MAX_VALUE;
+
+	// 		for (HashMap<Character, String> map : whereTables) {
+	// 			if (map.containsKey(table1JoinTable) && map.containsKey(table2JoinTable)) {
+	// 				equijoinMap = map;
+	// 			}
+	// 		}
+			
+			
+	// 		// if (equijoinMap == null) { // no equijoin, so cost is high
+	// 		// 	return Integer.MAX_VALUE;
+	// 		// }
+			
+
+			
+	// 		// use header to get the number of unique values in the right columns
+	// 		String[] table1HeaderArr = table1HeaderSB.toString().split(",");
+	// 		String table1JoinColName = equijoinMap.get(table1JoinTable);
+
+	// 		String table2Header = Catalog.getHeader(table2FileName);
+	// 		String[] table2HeaderArr = table2Header.split(",");
+	// 		String table2JoinColName = equijoinMap.get(table2);
+			
+	// 		// gets integer join columns
+	// 		int table1JoinCol = findIndex(table1HeaderArr, table1JoinColName);
+	// 		int table2JoinCol = findIndex(table2HeaderArr, table2JoinColName);
+			
+	// 		int[] table2UniqueColumns = Arrays.copyOf(Catalog.getUniqueColumns(table2FileName), table2HeaderArr.length);
+			
+	// 		int table1NumUniqueCol = table1UniqueColumns[table1JoinCol];
+	// 		int table2NumUniqueCol = Catalog.getUnique(table2FileName, table2JoinCol);
+			
+	// 		int minUnique = table1NumUniqueCol < table2NumUniqueCol ? table1NumUniqueCol : table2NumUniqueCol;
+			
+	// 		// calculates meta data for current table1
+	// 		int table2NumRows = Catalog.getRows(table2FileName);
+
+	// 		// System.out.println("table1 is " + table1);
+	// 		// System.out.println("table2 is " + table2);
+
+	// 		// System.out.println("table1JoinCol is " + table1JoinCol);
+	// 		// System.out.println("table2JoinCol is " + table2JoinCol);
+
+	// 		// System.out.println("table1NumRows is " + table1NumRows);
+	// 		// System.out.println("table2NumRows is " + table2NumRows);
+
+	// 		// System.out.println("table1NumUniqueCol is " + table1NumUniqueCol);
+	// 		// System.out.println("table2NumUniqueCol is " + table2NumUniqueCol);
+	// 		// System.out.println("minUnique is " + minUnique);
+
+	// 		int maxRows = table1NumRows * table2NumRows;
+	// 		// estimated rows for joined table
+
+	// 		boolean table1IsKey = (table1NumUniqueCol == table1NumRows);
+	// 		boolean table2IsKey = (table2NumUniqueCol == table2NumRows);
+
+
+	// 		// not sure what are keys
+	// 		if (table1IsKey && table2IsKey) { // both columns are keys
+	// 			table1NumRows = (table1NumRows < table2NumRows) ? table1NumRows : table2NumRows;
+	// 		} else if (table1IsKey || table2IsKey) { // one table is a key
+	// 			table1NumRows = (table1NumRows > table2NumRows) ? table1NumRows : table2NumRows;
+	// 		} else { // no keys
+	// 			table1NumRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
+	// 		}
+
+	// 		// just no keys for now
+	// 		// table1NumRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
+			
+	// 		// System.out.println("New Estimate is " + table1NumRows);
+			
+			
+	// 		if (table1HeaderSB.toString().indexOf(table2JoinCol) < 0) { // table2 join col not is already in table1 header
+	// 			table1HeaderSB.append("," + table2Header); // updates table1 header
+				
+	// 			table1UniqueColumns = combineRows(table1UniqueColumns, table2UniqueColumns);// updates unique columns
+	// 		}
+
+	// 		if (table1IsKey && table2IsKey) { // if both are keys, set the unique values to the min
+	// 			for (int j = 0; j < table1UniqueColumns.length; j++) {
+	// 				table1UniqueColumns[j] = (table1UniqueColumns[j] > table1NumRows) ? table1NumRows : table1UniqueColumns[j];
+	// 			}
+
+	// 		} else if (table1IsKey || table2IsKey) {
+	// 			// no change for distinct values?
+	// 		} else { // neither column is a key
+	// 			// percentage to decrease number of unique values
+	// 			double percentage = (double) table1NumRows / maxRows;
+
+	// 			for (int index = 0; index < table1UniqueColumns.length; index++) {
+	// 				int value = (int) Math.round(table1UniqueColumns[index] * percentage);
+	// 				if (value == 0) { // makes sure no value is 0 so we don't divide by 0
+	// 					table1UniqueColumns[index] = 1;
+	// 				} else {
+	// 					table1UniqueColumns[index] = value;
+	// 				}
+	// 			}
+	// 		}
+			
+			
+			
+	// 		// updates table1 name
+	// 		table1 += table2; 
+			
+	// 	}
+		
+	// 	return table1NumRows;
+	// }
+	// OLD COST //////////////////////////////////////////////////////////////////////////////////
 	
 	public int findIndex(String[] columnNames, String columnName) {
 		int i = 0;
@@ -886,7 +823,13 @@ public class Optimizer {
 			// int startingIndex = 0;
 
 			String bestOrder = bestOrders.remove(); // String in the best order for table joinings
-			System.out.println("best Order is " + bestOrder); 
+
+			// switch order if first table is not a predicate and second table is a predicate
+			if (!tablePredicateMap.containsKey(bestOrder.charAt(0)) && tablePredicateMap.containsKey(bestOrder.charAt(1))) {
+				bestOrder = bestOrder.charAt(1) + "" + bestOrder.charAt(0) + bestOrder.substring(2);
+			}
+
+			// System.out.println("Best Order is " + bestOrder); 
 			char table1 = bestOrder.charAt(0);
 
 			// columns to keep
@@ -907,9 +850,10 @@ public class Optimizer {
 			String[] headerArr = header.toString().split(",");
 			header.append(','); // add comma
 
-			if (Character.isLowerCase(table1)) { // predicate
+			//if (Character.isLowerCase(table1)) { // predicate
+			if (tablePredicateMap.containsKey(table1)) {
 				// add a predicate
-				table1 = Character.toUpperCase(table1);
+				//table1 = Character.toUpperCase(table1);
 				ArrayList<int[]> predDataList = tablePredicateMap.get(table1);
 				for (int i = 0; i < predDataList.size(); i++) { // updates predicate columns to the correct columns
 					int[] predData = predDataList.get(i);
@@ -956,8 +900,9 @@ public class Optimizer {
 				String[] header2Arr = header2.toString().split(",");
 
 
-				if (Character.isLowerCase(table2)) { // predicate
-					table2 = Character.toUpperCase(table2);
+				//if (Character.isLowerCase(table2)) { // predicate
+				if (tablePredicateMap.containsKey(table2)) { // predicate
+					//table2 = Character.toUpperCase(table2);
 					ArrayList<int[]> predDataList = tablePredicateMap.get(table2);
 					for (int j = 0; j < predDataList.size(); j++) { // updates predicate columns to the correct columns
 						int[] predData = predDataList.get(j);
@@ -980,8 +925,8 @@ public class Optimizer {
 					}
 				}
 				
-				whereTables.remove(joinMap); // removes joinMap to make searching shorter next time
-				// System.out.println("joinMap is null " + (joinMap == null));
+				whereTables.remove(joinMap); // removes joinMap to make searching shorter next time and for one table equijoins at the end
+
 				HashSet<Character> tables = new HashSet<>(joinMap.keySet());
 				Iterator<Character> tablesItr = tables.iterator();
 				char firstTable = tablesItr.next();
@@ -1123,38 +1068,67 @@ public class Optimizer {
 					// table 2 is now table 1
 					predicateQueue.add(new MergeJoinPredicate(table2JoinCol, table1JoinCol));
 				}
+
 				header.append(header2); // adds header of second table to first table
-				header.append(',');
+				
 				// System.out.println(header.toString());
-			}
 
-			// One table equijoins - tables already in joins
-			for (HashMap<Character, String> joinMap : whereTables) {
-				HashSet<Character> joinTables = new HashSet<>(joinMap.keySet());
-				Iterator<Character> joinTablesItr = joinTables.iterator();
-				char joinTable1 = joinTablesItr.next();
-				char joinTable2 = joinTablesItr.next();
+				// look for 1 table equijoins
+				Iterator<HashMap<Character, String>> whereTablesItr = whereTables.iterator();
+				while (whereTablesItr.hasNext()) {
+					HashMap<Character, String> joinMap2 = whereTablesItr.next();
+					Iterator<Character> joinMap2Itr = joinMap2.keySet().iterator();
+					char joinTable1 = joinMap2Itr.next();
+					char joinTable2 = joinMap2Itr.next();
 
-				if (inJoin.contains(joinTable1) && inJoin.contains(joinTable2)) {
-					// do 1 table equijoin
-					tableQueue.add(new Scan("Fake Table"));
+					if (inJoin.contains(joinTable1) && inJoin.contains(joinTable2)) {
+						String table1JoinColNameTemp = joinMap2.get(joinTable1);
+						String table2JoinColNameTemp = joinMap2.get(joinTable2);
 
-					String table1JoinColName = joinMap.get(joinTable1);
-					String table2JoinColName = joinMap.get(joinTable2);
+						int table1JoinColTemp = findIndex(header.toString().split(","), table1JoinColNameTemp);
+						int table2JoinColTemp = findIndex(header.toString().split(","), table2JoinColNameTemp);
 
-					header.delete(header.length() - 1, header.length()); // get rid of comma
-					headerArr = header.toString().split(",");
-					header.append(','); // add comma
-
-					int table1JoinCol = findIndex(headerArr, table1JoinColName);
-					int table2JoinCol = findIndex(headerArr, table2JoinColName);
-
-					// table1JoinCol += tableNameToStartingIndexMap.get(joinTable1);
-					// table2JoinCol += tableNameToStartingIndexMap.get(joinTable2);
-
-					predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, false));
+						// make 1 table equijoin
+						tableQueue.add(new Scan("Fake Table"));
+						predicateQueue.add(new EquijoinPredicate(table1JoinColTemp, table2JoinColTemp, false));
+						whereTablesItr.remove();
+					}
 				}
+
+				// adds the comma to header
+				header.append(',');
+
+				
 			}
+
+			// COMMENTED OUT BECAUSE I THINK WE DON'T NEED IT
+			// One table equijoins - tables already in joins
+			// for (HashMap<Character, String> joinMap : whereTables) {
+			// 	HashSet<Character> joinTables = new HashSet<>(joinMap.keySet());
+			// 	Iterator<Character> joinTablesItr = joinTables.iterator();
+			// 	char joinTable1 = joinTablesItr.next();
+			// 	char joinTable2 = joinTablesItr.next();
+
+			// 	if (inJoin.contains(joinTable1) && inJoin.contains(joinTable2)) {
+			// 		// do 1 table equijoin
+			// 		tableQueue.add(new Scan("Fake Table"));
+
+			// 		String table1JoinColName = joinMap.get(joinTable1);
+			// 		String table2JoinColName = joinMap.get(joinTable2);
+
+			// 		header.delete(header.length() - 1, header.length()); // get rid of comma
+			// 		headerArr = header.toString().split(",");
+			// 		header.append(','); // add comma
+
+			// 		int table1JoinCol = findIndex(headerArr, table1JoinColName);
+			// 		int table2JoinCol = findIndex(headerArr, table2JoinColName);
+
+			// 		// table1JoinCol += tableNameToStartingIndexMap.get(joinTable1);
+			// 		// table2JoinCol += tableNameToStartingIndexMap.get(joinTable2);
+
+			// 		predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, false));
+			// 	}
+			// }
 
 
 			// System.out.println("inner map is: ");

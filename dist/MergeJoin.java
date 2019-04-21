@@ -74,7 +74,7 @@ public class MergeJoin extends RAOperation {
 		private boolean noRows;
 		private boolean noHasNext;
 
-		// private int[] colsToKeep;
+		private boolean hasCombinationsLeft;
 		
 		public MergeJoinIterator(Iterator<Queue<int[]>> source1Iterator, Iterator<Queue<int[]>> source2Iterator, int table1JoinCol, int table2JoinCol) throws IOException {
 			// this.colsToKeep = colsToKeep;
@@ -104,6 +104,16 @@ public class MergeJoin extends RAOperation {
 				this.dis1 = Catalog.openStream(table1FinalName);
 				this.dis2 = Catalog.openStream(table2FinalName);
 				// for debugging - printing out all rows
+				///
+				// if (this.table1JoinCol == 5 && this.table2JoinCol == 0) {
+				// 	while (dis1.available() != 0) {
+				// 		for (int i = 0; i < this.table1Cols; i++) {
+				// 			System.out.print(dis1.readInt() + " ");
+				// 		}
+				// 		System.out.println();
+				// 	}
+				// }
+				///	
 				
 				dis1Value = -1;
 				dis2Value = -1;
@@ -145,7 +155,7 @@ public class MergeJoin extends RAOperation {
 				this.noRows = true;
 			}
 			
-			
+			this.hasCombinationsLeft = false;
 			
 		}
 
@@ -162,7 +172,7 @@ public class MergeJoin extends RAOperation {
 		
 		@Override
 		public boolean hasNext() {
-			return !this.noHasNext && (!table1Done || !table2Done);
+			return this.hasCombinationsLeft || (!this.noHasNext && (!table1Done || !table2Done));
 		}
 
 		@Override
@@ -173,6 +183,28 @@ public class MergeJoin extends RAOperation {
 				this.noHasNext = true;
 				return rowsToReturn;
 			} 
+
+			if (this.hasCombinationsLeft) {
+				this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+				if (this.hasCombinationsLeft) {
+					return rowsToReturn;
+				}
+
+				// add holders to empty queues
+				dis2Queue.clear();
+							
+				if (dis1HolderRow != null) {
+					dis1Value = dis1HolderRow[this.table1JoinCol];
+					dis1Queue.add(Arrays.copyOf(dis1HolderRow, dis1HolderRow.length));
+				}
+					
+				if (dis2HolderRow != null) {
+					dis2Value = dis2HolderRow[this.table2JoinCol];
+					dis2Queue.add(Arrays.copyOf(dis2HolderRow, dis2HolderRow.length));
+				}
+			}
+
+			
 
 			
 			while (rowsToReturn.size() < DatabaseEngine.bufferSize) {
@@ -321,7 +353,10 @@ public class MergeJoin extends RAOperation {
 
 						// System.out.println("Make Combinations");
 						// add all combinations of matched rows
-						makeCombinations(rowsToReturn);
+						this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+						if (this.hasCombinationsLeft) {
+							return rowsToReturn;
+						}
 						
 						// add holders to empty queues
 						dis2Queue.clear();
@@ -339,14 +374,23 @@ public class MergeJoin extends RAOperation {
 						
 					} else {
 						if(table1Done && table2Done) {
-							if (dis1Queue.size() == 1 && dis2Queue.size() == 1) {
+							if (dis1Queue.size() > 0 && dis2Queue.size() > 0) {
+							//if (dis1Queue.size() == 1 && dis2Queue.size() == 1) {
 								// int[] oldRow = combineRows(dis1Queue.remove(), dis2Queue.remove());
 								// int[] newRow = new int[this.colsToKeep.length];
 								// for (int i = 0; i < newRow.length; i++) {
 								// 	newRow[i] = oldRow[this.colsToKeep[i]];
 								// }
 								// rowsToReturn.add(newRow);
-								rowsToReturn.add(combineRows(dis1Queue.remove(), dis2Queue.remove()));
+
+								// old code
+								//rowsToReturn.add(combineRows(dis1Queue.remove(), dis2Queue.remove()));
+
+								// make combinations
+								this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+								if (this.hasCombinationsLeft) {
+									return rowsToReturn;
+								}
 							}
 
 								
@@ -383,8 +427,12 @@ public class MergeJoin extends RAOperation {
 										break;
 									}
 								}
-							
-								makeCombinations(rowsToReturn);
+								table1Done = true;
+								this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+								if (this.hasCombinationsLeft) {
+									return rowsToReturn;
+								}
+								
 							}
 							table1Done = true;
 						} else if (table1Done) {
@@ -418,8 +466,11 @@ public class MergeJoin extends RAOperation {
 										break;
 									}
 								}
-							
-								makeCombinations(rowsToReturn);
+								table2Done = true;
+								this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+								if (this.hasCombinationsLeft) {
+									return rowsToReturn;
+								}
 							}
 							table2Done = true;
 						}
@@ -432,14 +483,16 @@ public class MergeJoin extends RAOperation {
 					break;
 				}
 			}
-				
+			
+			
 			return rowsToReturn;
 		}
 
-		public void makeCombinations(Queue<int[]> rowsToReturn) {
+		public boolean makeCombinations(Queue<int[]> rowsToReturn) {
 			int[] dis1Row;
 			// int[] dis2Row;
 			// System.out.println("dis1Queue size is " + dis1Queue.size());
+			// System.out.println("dis2Queue size is " + dis2Queue.size());
 			while (!dis1Queue.isEmpty()) {
 				dis1Row = dis1Queue.remove();
 				// System.out.println("dis1Row:");
@@ -467,9 +520,16 @@ public class MergeJoin extends RAOperation {
 					// rowsToReturn.add(newRow);
 
 					rowsToReturn.add(combineRows(dis1Row, dis2QueueItr.next()));
-
 				}
+
+				// checks to make sure rowsToReturn hasn't exceeded the bufferSize
+				if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
+					return true;
+				}
+
 			}
+
+			return false;
 		}
 		
 		

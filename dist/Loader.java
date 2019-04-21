@@ -25,7 +25,8 @@ public class Loader {
 
 	public void readCSVFile(String path) throws FileNotFoundException, IOException {
 		int tableNameIndex = path.lastIndexOf('/') + 1;
-		String tableName = path.substring(tableNameIndex, tableNameIndex + 1);
+		// String tableName = path.substring(tableNameIndex, tableNameIndex + 1);
+		char tableName = path.charAt(tableNameIndex);
 
 		Scanner scanner = new Scanner(new File(path));
 		// Gets the first line for the number of columns
@@ -117,7 +118,6 @@ public class Loader {
 			int maxMinDiff = maxArray[i] - minArray[i];
 			uniqueArray[i] = (numOfRows < maxMinDiff) ? numOfRows : maxMinDiff;
 		}
-
 
 		StringBuilder sb = new StringBuilder();
 		
