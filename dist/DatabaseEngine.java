@@ -42,7 +42,6 @@ public class DatabaseEngine {
 		// long stop = System.currentTimeMillis();
 		// System.out.println("Loading Time : " + (stop - start));
 		// System.out.println();
-		// System.exit(0);
 		
 		// PARSER
 		Parser parser = new Parser();
@@ -138,8 +137,8 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		// scanner = new Scanner(new File("../../data/xs/queries.sql"));
-		// scanner = new Scanner(new File("../../data/xs/queryTest.sql"));
+		// scanner = new Scanner(new File("../../data/m/queries.sql"));
+		// scanner = new Scanner(new File("../../data/m/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
 
@@ -162,15 +161,17 @@ public class DatabaseEngine {
 			// System.out.println("Optimizer Time: " + (stop - start));
 			// totalOptimizerTime += (stop - start);
 
-			// long start = System.currentTimeMillis();
+			// Gets rid of all the data in the parser
+			parser.empty();
+
+			// start = System.currentTimeMillis();
 			// Execute Query
 			executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum());
-			// long stop = System.currentTimeMillis();
+			// stop = System.currentTimeMillis();
 			// System.out.println("Execution Time: " + (stop - start));
 			// totalExecutionTime += (stop - start);
 
-			// Gets rid of all the data in the parser
-			parser.empty();
+			
 		}
 		// Last Query
 		parser.readQuery(scanner);

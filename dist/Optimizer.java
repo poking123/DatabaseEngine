@@ -414,8 +414,8 @@ public class Optimizer {
 					if (foundMap) {
 						hasJoinPredicate = true;
 						// check which columns are keys
-						int table1NumRows = Catalog.getRows(joinTables[0] + ".dat");
-						int table2NumRows = Catalog.getRows(joinTables[1] + ".dat");
+						long table1NumRows = Catalog.getRows(joinTables[0] + ".dat");
+						long table2NumRows = Catalog.getRows(joinTables[1] + ".dat");
 
 						int table1NumUniqueCol = Catalog.getUnique(joinTables[0] + ".dat", joinColumns[0]);
 						int table2NumUniqueCol = Catalog.getUnique(joinTables[1] + ".dat", joinColumns[1]);
@@ -425,8 +425,8 @@ public class Optimizer {
 						boolean table1IsKey = (table1NumUniqueCol == table1NumRows);
 						boolean table2IsKey = (table2NumUniqueCol == table2NumRows);
 
-						long maxRows = (long) table1NumRows * table2NumRows;
-						int estimateRows = -1;
+						long maxRows = table1NumRows * table2NumRows;
+						long estimateRows = -1;
 						// not sure what are keys
 						if (table1IsKey && table2IsKey) { // both columns are keys
 							estimateRows = (table1NumRows < table2NumRows) ? table1NumRows : table2NumRows;
