@@ -137,7 +137,7 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		// scanner = new Scanner(new File("../../data/m/queries.sql"));
+		// scanner = new Scanner(new File("../../data/xs/queries.sql"));
 		// scanner = new Scanner(new File("../../data/m/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
@@ -178,11 +178,12 @@ public class DatabaseEngine {
 
 		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		
-		// long start = System.currentTimeMillis();
+		// start = System.currentTimeMillis();
 		// Execute Query
 		executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum());
-		// long stop = System.currentTimeMillis();
+		// stop = System.currentTimeMillis();
 		// System.out.println("Execution Time: " + (stop - start));
+		// totalExecutionTime += (stop - start);
 		
 		// long totalStop = System.currentTimeMillis();
 

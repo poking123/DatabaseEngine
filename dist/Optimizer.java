@@ -1015,7 +1015,9 @@ public class Optimizer {
 					///
 
 					// adds mergeJoin Predicate
-					predicateQueue.add(new MergeJoinPredicate(table1JoinCol, table2JoinCol));
+					// REPLACE MERGE JOIN HERE
+					// predicateQueue.add(new MergeJoinPredicate(table1JoinCol, table2JoinCol));
+					predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true));
 
 				} else if (containsSecondTable) {
 
@@ -1066,7 +1068,9 @@ public class Optimizer {
 					///
 
 					// table 2 is now table 1
-					predicateQueue.add(new MergeJoinPredicate(table2JoinCol, table1JoinCol));
+					// REPLACE MERGE JOIN HERE
+					//predicateQueue.add(new MergeJoinPredicate(table2JoinCol, table1JoinCol));
+					predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true));
 				}
 
 				header.append(header2); // adds header of second table to first table

@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.TreeMap;
 
 public class Equijoin extends RAOperation {
 	private Iterable<Queue<int[]>> source1;
@@ -41,6 +42,15 @@ public class Equijoin extends RAOperation {
 		private boolean isTwoTableJoin;
 		private int table1JoinCol;
 		private int table2JoinCol;
+
+		private Queue<int[]> table1MatchingRows;
+		private int[] table2Row;
+
+		private Iterator<Queue<int[]>> table2RowBlocks;
+
+		private Queue<int[]> table2RowBlock;
+
+		private HashMap<Integer, Queue<int[]>> bufferMap;
 		
 		public EquijoinIterator(Iterator<Queue<int[]>> source1Iterator, Iterable<Queue<int[]>> source2, boolean isTwoTableJoin, int table1JoinCol, int table2JoinCol) {
 			this.source1Iterator = source1Iterator;
@@ -49,21 +59,98 @@ public class Equijoin extends RAOperation {
 			
 			this.table1JoinCol = table1JoinCol;
 			this.table2JoinCol = table2JoinCol;
+
+			this.table1MatchingRows = new LinkedList<>();
+			table2Row = new int[1];
+
+			if (this.isTwoTableJoin) {
+				table2RowBlocks = source2.iterator();
+				if (table2RowBlocks.hasNext()) {
+					table2RowBlock = table2RowBlocks.next();
+				}
+			}
+			
+
+			
+
+			bufferMap = new HashMap<>();
 		}
 		
 		@Override
 		public boolean hasNext() {
-			return source1Iterator.hasNext();
+			return source1Iterator.hasNext() || this.table1MatchingRows.size() > 0;
 		}
 
 		@Override
 		public Queue<int[]> next() {
-			Queue<int[]> input = source1Iterator.next();
-			
 				
 			Queue<int[]> rowsToReturn = new LinkedList<>();
+
+			if (this.isTwoTableJoin) {
+				// finish the rest of the matching rows
+				if (this.table1MatchingRows.size() > 0) {
+					while (!this.table1MatchingRows.isEmpty()) {
+						rowsToReturn.add(combineRows(this.table1MatchingRows.remove(), this.table2Row));
+
+						if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
+							return rowsToReturn;
+						}
+					}
+				}
+
+				// finish the rest of the table2 Block
+				while (!table2RowBlock.isEmpty()) {
+					this.table2Row = table2RowBlock.remove();
+					int value = table2Row[this.table2JoinCol];
+					if (bufferMap.containsKey(value)) {
+						this.table1MatchingRows = new LinkedList<>(bufferMap.get(value));
+						
+						while (!this.table1MatchingRows.isEmpty()) {
+							// int[] table1MatchingRow = table1MatchingRows.remove();
+							rowsToReturn.add(combineRows(table1MatchingRows.remove(), table2Row));
+
+							if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
+								return rowsToReturn;
+							}
+						}
+					}
+					// else, there are no matches
+				}
+
+				// finished the rest of table2 Blocks
+				while (table2RowBlocks.hasNext() && !bufferMap.isEmpty()) {
+					table2RowBlock = table2RowBlocks.next();
+					while (!table2RowBlock.isEmpty()) {
+						this.table2Row = table2RowBlock.remove();
+						int value = table2Row[this.table2JoinCol];
+						if (bufferMap.containsKey(value)) {
+							this.table1MatchingRows = new LinkedList<>(bufferMap.get(value));
+							
+							while (!this.table1MatchingRows.isEmpty()) {
+								// int[] table1MatchingRow = table1MatchingRows.remove();
+								rowsToReturn.add(combineRows(table1MatchingRows.remove(), table2Row));
+
+								if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
+									return rowsToReturn;
+								}
+							}
+						}
+						// else, there are no matches
+
+					}
+				}
+			}
+
 			
-			if (input.isEmpty()) {
+
+			// next table1 Block
+			Queue<int[]> input = new LinkedList<>();
+			if (source1Iterator.hasNext()) { // we will have a new block
+				input = source1Iterator.next();
+			}
+			
+			
+			if (input.isEmpty()) { // this will also catch when we hasNext() is not true
 				return rowsToReturn;
 			} else {
 				// BIG IF - Two table equijoin (tables are merged)
@@ -102,9 +189,9 @@ public class Equijoin extends RAOperation {
 
 					// Make HashMap for Hash BNLJ ////////////////////////////////////
 					// table1JoinCol Value -> index in buffer
-					HashMap<Integer, List<int[]>> bufferMap = new HashMap<>();
+					bufferMap = new HashMap<>();
 					while (!input.isEmpty()) {
-						List<int[]> listOfIndices = new ArrayList<>();
+						Queue<int[]> listOfIndices = new LinkedList<>();
 
 						int[] table1Row = input.remove();
 						int value = table1Row[this.table1JoinCol];
@@ -116,37 +203,47 @@ public class Equijoin extends RAOperation {
 						
 						bufferMap.put(value, listOfIndices);
 					}
+
 					
 					// just have to loop through table 2
-					Iterator<Queue<int[]>> table2RowBlocks = source2.iterator();
+					table2RowBlocks = source2.iterator();
 					while (table2RowBlocks.hasNext()) {
-						Queue<int[]> table2RowBlock = table2RowBlocks.next();
-						for (int[] table2Row : table2RowBlock) {
+						table2RowBlock = table2RowBlocks.next();
+						while (!table2RowBlock.isEmpty()) {
+							this.table2Row = table2RowBlock.remove();
 							int value = table2Row[this.table2JoinCol];
 							if (bufferMap.containsKey(value)) {
-								List<int[]> table1MatchingRows = bufferMap.get(value);
+								this.table1MatchingRows = new LinkedList<>(bufferMap.get(value));
 								
-								for (int[] table1MatchingRow : table1MatchingRows) {
-									rowsToReturn.add(combineRows(table1MatchingRow, table2Row));
+								while (!this.table1MatchingRows.isEmpty()) {
+									// int[] table1MatchingRow = table1MatchingRows.remove();
+									rowsToReturn.add(combineRows(table1MatchingRows.remove(), table2Row));
+
+									if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
+										return rowsToReturn;
+									}
 								}
 							}
 							// else, there are no matches
 
 						}
 					}
+
+
+
 					
 					// REGULAR BLOCK NESTED LOOP JOIN
-//					for (int[] table1Row : input) {
-//						Iterator<List<int[]>> table2RowBlocks = source2.iterator();
-//						while (table2RowBlocks.hasNext()) {
-//							List<int[]> table2RowBlock = table2RowBlocks.next();
-//							for (int[] table2Row : table2RowBlock) {
-//								if (equijoinPredicate.test(table1Row, table2Row)) {
-//									rowsToReturn.add(combineRows(table1Row, table2Row));
-//								}	
-//							}
-//						}
-//					}
+					// for (int[] table1Row : input) {
+					// 	Iterator<Queue<int[]>> table2RowBlocks = source2.iterator();
+					// 	while (table2RowBlocks.hasNext()) {
+					// 		Queue<int[]> table2RowBlock = table2RowBlocks.next();
+					// 		for (int[] table2Row : table2RowBlock) {
+					// 			if (equijoinPredicate.test(table1Row, table2Row)) {
+					// 				rowsToReturn.add(combineRows(table1Row, table2Row));
+					// 			}	
+					// 		}
+					// 	}
+					// }
 					
 					
 					// PRINT - FOR DEBUGGING
@@ -174,22 +271,9 @@ public class Equijoin extends RAOperation {
 		
 		public int[] combineRows(int[] row1, int[] row2) {
 			int[] combinedRow = new int[row1.length + row2.length];
-			int i = 0;
-			int totalIndex = 0;
-			
-			while (i < row1.length) {
-				combinedRow[totalIndex] = row1[totalIndex];
-				i++;
-				totalIndex++;
-			}
-			
-			i = 0;
-			
-			while (i < row2.length) {
-				combinedRow[totalIndex] = row2[i];
-				i++;
-				totalIndex++;
-			}
+
+			System.arraycopy(row1, 0, combinedRow, 0, row1.length);
+			System.arraycopy(row2, 0, combinedRow, row1.length, row2.length);
 			
 			return combinedRow;
 		}
