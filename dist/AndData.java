@@ -21,6 +21,7 @@ public class AndData {
 	// index 0 - column
 	// index 1 - operator
 	// index 2 - compare value
+	// index 3 - original column
 	public HashMap<Character, ArrayList<int[]>> getTablePredicateMap() {
 		return this.tablePredicateMap;
 	}
@@ -52,7 +53,7 @@ public class AndData {
 			// index 0 - column
 			// index 1 - operator
 			// index 2 - compare value
-			int[] data = {columnNumber, operatorNum, compareValue};
+			int[] data = {columnNumber, operatorNum, compareValue, columnNumber};
 			ArrayList<int[]> dataList = new ArrayList<>();
 			// One table is mapped to a list of predicates
 			if (tablePredicateMap.containsKey(tableNameChar)) {

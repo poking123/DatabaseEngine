@@ -1,14 +1,20 @@
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.FileReader;
 import java.io.FileOutputStream;
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
 import java.nio.CharBuffer;
 
 public class Loader {
@@ -52,8 +58,6 @@ public class Loader {
 		FileReader fr = new FileReader(path);
 		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tableName + ".dat")));
 		
-//		StringBuilder sb = new StringBuilder();
-		
 		
 		CharBuffer cb1 = CharBuffer.allocate(4 * 1024);
 		CharBuffer cb2 = CharBuffer.allocate(4 * 1024);
@@ -71,8 +75,6 @@ public class Loader {
 					int numRead = Integer.parseInt(cb1, lastNumberStart, i, 10);
                     dos.writeInt(numRead);
 					lastNumberStart = i + 1;
-					// Clears the StringBuilder
-//					sb.setLength(0);
 
 					// Metadata
 					int modIndex = index % numOfCols;
@@ -85,13 +87,9 @@ public class Loader {
 					//// uniqueSetArray.get(modIndex).add(numRead);
 
 					index++;
-				} else {
-//					sb.append(cb1.charAt(i));
 				}
 			}
 
-			// Clears the StringBuilder
-//			sb.setLength(0);
 			// Clears the CharBuffer
 			cb2.clear();
 			// Transfers the contents of the CharBuffer
@@ -137,9 +135,35 @@ public class Loader {
 		tmd.setMax(maxArray);
 		tmd.setUnique(uniqueArray);
 		Catalog.addData(tableName + ".dat", tmd);
-		minArray = null;
-		maxArray = null;
-		uniqueArray = null;
+		
+
+
+		// for (int i = 0; i < numOfCols; i++) {
+		// 	int tableJoinCol = i;
+		// 	// System.out.println("tableJoinCol is " + i);
+		// 	// System.out.println("num of unique is " + uniqueArray[tableJoinCol]);
+		// 	// System.out.println("num of rows is " + numOfRows);
+		// 	// System.out.println();
+		// 	if (uniqueArray[tableJoinCol] == numOfRows || uniqueArray[tableJoinCol] == (numOfRows - 1)) {
+		// 		String sortedFileName = writeSortedFileToDisk(tableName, numOfCols, tableJoinCol, dos);
+		// 		DatabaseEngine.sortedColumnsMap.put(tableName + "" + tableJoinCol + ".dat", sortedFileName);
+		// 	}
+		// }
+		
+
+
+		// for debugging, to read the data
+		// String fileNameToRead = DatabaseEngine.sortedColumnsMap.get(tableName + "" + tableJoinCol + ".dat");
+
+		
+		// DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(fileNameToRead))); 
+		// while (dis.available() != 0) {
+		// 	for (int i = 0; i < numOfCols; i++) {
+		// 		System.out.print(dis.readInt() + " ");
+		// 	}
+		// 	System.out.println();
+		// }
+
 	}
 	
 	// returns the String of CSV files
@@ -147,4 +171,159 @@ public class Loader {
 		// Get the CSV files
 		return scanner.nextLine();
 	}
-}
+
+	public String writeSortedFileToDisk(char tableName, int numOfCols, int tableJoinCol, DataOutputStream dos) throws IOException {
+		// rewrite sorted columns
+		DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat")));
+		
+		Queue<String> holder1 = new LinkedList<>();
+		Queue<String> holder2 = new LinkedList<>();
+
+
+		while (dis.available() != 0) {
+			int tempNumber = DatabaseEngine.tempNumber;
+			DatabaseEngine.tempNumber++;
+			dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+			holder1.add(tempNumber + ".dat");
+
+			// gets buffer of rows
+			Queue<int[]> tableRows = new LinkedList<>();
+			while (tableRows.size() < DatabaseEngine.mergejoinBufferSize && dis.available() != 0) {
+				int[] row = new int[numOfCols];
+				for (int i = 0; i < numOfCols; i++) {
+					row[i] = dis.readInt();
+				}
+				tableRows.add(row);
+			}
+
+			TreeMap<Integer, Queue<int[]>> columnValueToRowsMap = new TreeMap<>();
+			while (!tableRows.isEmpty()) { // writes all rows to map
+				Queue<int[]> valueRows = new LinkedList<>();
+				int[] tableRow = tableRows.remove();
+				int tableJoinColValue = tableRow[tableJoinCol];
+				if (columnValueToRowsMap.containsKey(tableJoinColValue)) {
+					valueRows = columnValueToRowsMap.get(tableJoinColValue);
+				}
+				valueRows.add(tableRow);
+				columnValueToRowsMap.put(tableJoinColValue, valueRows);
+			}
+			
+			// writes the sorted keyset
+			while (!columnValueToRowsMap.isEmpty()) {
+				int key = columnValueToRowsMap.firstKey();
+				Queue<int[]> tableSortedRows = columnValueToRowsMap.get(key);
+				while (!tableSortedRows.isEmpty()) {
+					int[] tableSortedRow = tableSortedRows.remove();
+					for (int i : tableSortedRow) {
+						dos.writeInt(i);
+					}
+				}
+				columnValueToRowsMap.remove(key);
+			}
+			dos.close();
+		}
+		dis.close();
+
+		while (holder1.size() != 1) {
+			while (!holder1.isEmpty()) {
+				if (holder1.size() == 1) {
+					holder2.add(holder1.remove());
+				} else {
+					mergeFiles(holder1.remove(), holder1.remove(), numOfCols, tableJoinCol, holder1, holder2);
+				}
+			}
+			
+			holder1 = holder2;
+			holder2 = new LinkedList<>();
+		}
+		
+		return holder1.remove();
+	}
+
+	public void mergeFiles(String table1, String table2, int tableCols, int tableJoinCol, Queue<String> holder1, Queue<String> holder2) throws IOException {
+		
+		int tempNumber = DatabaseEngine.tempNumber;
+		DatabaseEngine.tempNumber++;
+		DataOutputStream tempDOS = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+		
+		holder2.add(tempNumber + ".dat");
+		
+		DataInputStream dis1 = Catalog.openStream(table1);
+		DataInputStream dis2 = Catalog.openStream(table2);
+		
+		// fills the rows for both tables
+		int[] table1TempRow = new int[tableCols];
+		int[] table2TempRow = new int[tableCols];
+		
+		boolean writeTable1 = true;
+		boolean writeTable2 = true;
+
+		boolean table1Done = false;
+		boolean table2Done = false;
+		while (!table1Done && !table2Done) {
+
+			if (writeTable1) {
+				for (int i = 0; i < tableCols; i++) {
+					int value = dis1.readInt();
+					table1TempRow[i] = value;
+				}
+				writeTable1 = false;
+			}
+			
+			if (writeTable2) {
+				for (int i = 0; i < tableCols; i++) {
+					int value = dis2.readInt();
+					table2TempRow[i] = value;
+				}
+				writeTable2 = false;
+			}
+			
+			
+			int table1JoinColValue = table1TempRow[tableJoinCol];
+			int table2JoinColValue = table2TempRow[tableJoinCol];
+			
+			// write the smaller row
+			if (table1JoinColValue < table2JoinColValue) {
+				
+				for (int i : table1TempRow) {
+					tempDOS.writeInt(i);
+				}
+				writeTable1 = true;
+				if (dis1.available() == 0) table1Done = true;
+				
+			} else {
+				for (int i : table2TempRow) {
+					tempDOS.writeInt(i);
+				}
+				writeTable2 = true;
+				if (dis2.available() == 0) table2Done = true;
+			}
+		}
+		
+		if (table1Done) {
+			for (int i : table2TempRow) { // write what's currently in table2Row
+				tempDOS.writeInt(i);
+			}
+
+			while (dis2.available() != 0) { // write what's left in dis2
+				for (int i = 0; i < tableCols; i++) {
+					int value = dis2.readInt();
+					tempDOS.writeInt(value);
+				}
+			}
+		} else if (table2Done) {
+			for (int i : table1TempRow) { // write what's currently in table1Row
+				tempDOS.writeInt(i);
+			}
+
+			while (dis1.available() != 0) { // write what's left in dis1
+				for (int i = 0; i < tableCols; i++) {
+					int value = dis1.readInt();
+					tempDOS.writeInt(value);
+				}
+			}
+		}
+		
+		tempDOS.close();
+	}
+ }

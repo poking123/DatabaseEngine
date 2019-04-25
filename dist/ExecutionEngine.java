@@ -1,10 +1,12 @@
+import java.io.FileNotFoundException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.Queue;
 
 public class ExecutionEngine {
 	
-	public void executeQuery(Queue<Queue<RAOperation>> tablesQueue, Queue<Queue<Predicate>> predicatesQueue, Queue<Predicate> finalPredicateQueue, int[] columnsToSum) {
+	public void executeQuery(Queue<Queue<RAOperation>> tablesQueue, Queue<Queue<Predicate>> predicatesQueue, Queue<Predicate> finalPredicateQueue, int[] columnsToSum, Queue<Queue<Boolean>> switchesQueue) {
 		
 		Deque<RAOperation> finalDeque = new ArrayDeque<>();
 		
@@ -13,6 +15,10 @@ public class ExecutionEngine {
 
 			Queue<RAOperation> tableQueue = tablesQueue.remove();
 			Queue<Predicate> predicateQueue = predicatesQueue.remove();
+			Queue<Boolean> switchQueue = switchesQueue.remove();
+
+			System.err.println(tableQueue);
+			System.err.println(predicateQueue);
 			
 			Deque<RAOperation> resultQueue = new ArrayDeque<>();
 			
@@ -23,6 +29,10 @@ public class ExecutionEngine {
 				// System.out.println();
 				Predicate currentPredicate = predicateQueue.remove();
 				switch (currentPredicate.getType()) {
+					case "placePredicate": // just put a table from tableQueue onto resultQueue
+						resultQueue.add(tableQueue.remove());
+						break;
+
 					case "filterPredicate": // take off from deque, filter, and put on result queue
 						RAOperation operation = tableQueue.remove();
 						FilterPredicate fp = (FilterPredicate) currentPredicate;
@@ -37,9 +47,19 @@ public class ExecutionEngine {
 						}
 						
 						EquijoinPredicate ep = (EquijoinPredicate) currentPredicate;
+
 						RAOperation table1 = resultQueue.remove();
 						RAOperation table2 = resultQueue.remove();
-						Equijoin equijoin = new Equijoin(table1, table2, ep);
+
+						Equijoin equijoin = new Equijoin(table1, table2, ep); // dummy declaration
+						if (switchQueue.remove()) {
+							equijoin = new Equijoin(table2, table1, ep);
+						} else {
+							equijoin = new Equijoin(table1, table2, ep);
+						}
+
+						// Equijoin equijoin = new Equijoin(table1, table2, ep);
+						//Equijoin equijoin = new Equijoin(table2, table1, ep); // making hash on smaller table?
 						resultQueue.add(equijoin); // adds result to result queue
 						break;
 
@@ -49,6 +69,7 @@ public class ExecutionEngine {
 						RAOperation disjointTable1 = tableQueue.remove();
 						RAOperation disjointTable2 = tableQueue.remove();
 						Equijoin disjointEquijoin = new Equijoin(disjointTable1, disjointTable2, ep2);
+
 						resultQueue.add(disjointEquijoin);
 						break;
 
@@ -61,8 +82,51 @@ public class ExecutionEngine {
 						MergeJoinPredicate ep3 = (MergeJoinPredicate) currentPredicate;
 						RAOperation mgTable1 = resultQueue.remove();
 						RAOperation mgTable2 = resultQueue.remove();
+
 						MergeJoin mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
+						if (switchQueue.remove()) { // not needed because it's merge join?
+							mergeJoin = new MergeJoin(mgTable2, mgTable1, ep3);
+						} else {
+							mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
+						}
+
+						// MergeJoin mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
 						resultQueue.add(mergeJoin); // adds result to result queue
+						break;
+
+					case "equijoinWritePredicate":
+						// perform an equijoin and put a scan of the file name in the resultQueue
+						// makes sure result queue size is 2
+						while (resultQueue.size() < 2) {
+							resultQueue.add(tableQueue.remove());
+						}
+						
+						EquijoinPredicate ep4 = (EquijoinPredicate) currentPredicate;
+
+						RAOperation EJWritetable1 = resultQueue.remove();
+						RAOperation EJWritetable2 = resultQueue.remove();
+
+						int tempNumber = DatabaseEngine.tempNumber;
+						DatabaseEngine.tempNumber++;
+
+						EquijoinWrite equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber); // dummy declaration
+						if (switchQueue.remove()) {
+							equijoinWrite = new EquijoinWrite(EJWritetable2, EJWritetable1, ep4, tempNumber);
+						} else {
+							equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber);
+						}
+
+						Iterator<Queue<int[]>> equijoinWriteItr = equijoinWrite.iterator();
+						while (equijoinWriteItr.hasNext()) { // write the new file to disk
+							equijoinWriteItr.next();
+						}
+
+						try {
+							resultQueue.add(new Scan(tempNumber + ".dat")); // adds result to result queue
+						} catch (FileNotFoundException e) {
+							System.out.println("ExecutionEngine - equjoinWrite - FileNotFoundException");
+						}
+						
 						break;
 				}
 			}

@@ -1,0 +1,109 @@
+public double cost(String tables) {
+		// System.out.println("tables is " + tables);
+		double product = 1;
+		double totalSum = 0;
+		
+		HashSet<Character> joinedTables = new HashSet<>();
+		// join another table - add the product to totalSum
+		for (int i = 0; i < tables.length(); i++) {
+			char currTable = tables.charAt(i);
+			joinedTables.add(currTable); // adds the table to the set of joined tables
+
+			// check for predicate
+			String tableName = currTable + ".dat";
+			int tableNumRows = Catalog.getRows(tableName);
+			if (tablePredicateMap.containsKey(currTable)) {
+				ArrayList<int[]> predDataList = tablePredicateMap.get(currTable);
+				for (int[] predData : predDataList) {
+					int column = predData[3];
+
+					// System.out.println("min is " + Catalog.getMin(tableName, column));
+					// System.out.println("max is " + Catalog.getMax(tableName, column));
+					// System.out.println("operator is " + predData[1]);
+					// System.out.println("compareValue is " + predData[2]);
+					// System.out.println("estimatePredicateRows is " + estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]));
+					// System.out.println("tableNumRows is " + tableNumRows);
+					// System.out.println("before upper product is " + product);
+					// System.out.println("to multiply to product is " + (estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]) / tableNumRows));
+
+					product *= estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]) / tableNumRows;
+					// System.out.println("after upper product is " + product);
+				}
+			}
+
+			// multiplies by the number of rows in the table
+			product *= tableNumRows;
+
+			// check for joins if we're not at the first table
+			if (i > 0) {
+				boolean hasJoinPredicate = false;
+				for (HashMap<Character, String> joinMap : whereTables) {
+					char[] joinTables = new char[2];
+					int[] joinColumns = new int[2];
+					int tableNumber = 0;
+					boolean foundMap = false;
+
+					if (joinMap.keySet().contains(currTable)) {
+						foundMap = true;
+						for (char c : joinMap.keySet()) {
+							if (!joinedTables.contains(c)) {
+								foundMap = false;
+								break;
+							}
+							joinTables[tableNumber] = c;
+							String tableAndColumn = joinMap.get(c);
+							joinColumns[tableNumber] = Integer.parseInt(tableAndColumn, 3, tableAndColumn.length(), 10);
+							tableNumber++;
+						}
+					}
+					
+
+					if (foundMap) {
+						hasJoinPredicate = true;
+						// check which columns are keys
+						long table1NumRows = Catalog.getRows(joinTables[0] + ".dat");
+						long table2NumRows = Catalog.getRows(joinTables[1] + ".dat");
+
+						int table1NumUniqueCol = Catalog.getUnique(joinTables[0] + ".dat", joinColumns[0]);
+						int table2NumUniqueCol = Catalog.getUnique(joinTables[1] + ".dat", joinColumns[1]);
+						
+						int minUnique = table1NumUniqueCol < table2NumUniqueCol ? table1NumUniqueCol : table2NumUniqueCol;
+
+						boolean table1IsKey = (table1NumUniqueCol == table1NumRows);
+						boolean table2IsKey = (table2NumUniqueCol == table2NumRows);
+
+						long maxRows = table1NumRows * table2NumRows;
+						long estimateRows = -1;
+						// not sure what are keys
+						if (table1IsKey && table2IsKey) { // both columns are keys
+							estimateRows = (table1NumRows < table2NumRows) ? table1NumRows : table2NumRows;
+						} else if (table1IsKey || table2IsKey) { // one table is a key
+							estimateRows = (table1NumRows > table2NumRows) ? table1NumRows : table2NumRows;
+						} else { // no keys
+							estimateRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
+						}
+						// System.out.println("table1NumRows is " + table1NumRows);
+						// System.out.println("table2NumRows is " + table2NumRows);
+						// System.out.println("estimateRows is " + (float) estimateRows);
+						// System.out.println("max rows is " + maxRows);
+						// System.out.println("non-predicate before product is " + product);
+						// System.out.println("non-predicate to multiply is " + ((float) estimateRows / maxRows));
+						product *= (double) estimateRows / maxRows;
+						// System.out.println("non-predicate after product is " + product);
+					}
+				}
+
+				// add calculated value to totalSum
+				if (hasJoinPredicate) {
+					// System.out.println("product is " + product);
+					totalSum += product;
+				} else {
+					return Float.MAX_VALUE;
+				}
+				
+			}
+		}
+
+
+		return totalSum;
+	}

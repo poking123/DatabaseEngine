@@ -11,11 +11,13 @@ public class Project extends RAOperation {
 		this.colsToKeep = colsToKeep;
 	}
 	
-	
+	public String toString() {
+        return this.source.toString();
+    }
 
     @Override
     public Iterator<Queue<int[]>> iterator() {
-        return new ProjectIterator(source.iterator(), colsToKeep);
+        return new ProjectIterator(source.iterator(), colsToKeep, this.toString());
     }
 
     @Override
@@ -27,11 +29,21 @@ public class Project extends RAOperation {
     public class ProjectIterator implements Iterator<Queue<int[]>> {
         private Iterator<Queue<int[]>> sourceIterator;
         private int[] colsToKeep;
+        private String tableFileName;
 		
-		public ProjectIterator(Iterator<Queue<int[]>> sourceIterator, int[] colsToKeep) {
+		public ProjectIterator(Iterator<Queue<int[]>> sourceIterator, int[] colsToKeep, String tableFileName) {
             this.sourceIterator = sourceIterator;
             this.colsToKeep = colsToKeep;
-		}
+            this.tableFileName = tableFileName;
+        }
+        
+        public String toString() {
+            return tableFileName;
+        }
+
+        public String getType() {
+            return "Project";
+        }
 		
 		@Override
         public boolean hasNext() {

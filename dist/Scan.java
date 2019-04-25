@@ -18,7 +18,7 @@ public class Scan extends RAOperation {
 	}
 
 	public String toString() {
-		return "Scan " + tableName;
+		return tableName;
 	}
 	
 	public String getType() {
@@ -35,10 +35,7 @@ public class Scan extends RAOperation {
 		}
 	}
 	
-	public class ScanIterator implements Iterator<Queue<int[]>> {
-			
-//			private final int bufferSize = 50;
-			
+	public class ScanIterator implements Iterator<Queue<int[]>> {		
 			private final DataInputStream dis;
 			private final int numCols;
 			private int rowsRemaining;
@@ -61,7 +58,7 @@ public class Scan extends RAOperation {
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
 				try {
-					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
+					while (rowsBuffer.size() < DatabaseEngine.mergejoinBufferSize) {
 						int[] row = new int[numCols];
 						for (int i = 0; i < numCols; i++) {
 							row[i] = dis.readInt();

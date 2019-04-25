@@ -21,6 +21,7 @@ public class ProjectAndSum implements Iterator<Queue<int[]>>{
 
 	@Override
 	public Queue<int[]> next() {
+		// System.out.println("PAS next called");
 		Queue<int[]> input = source.next();
 		
 		for (int[] row : input) {
@@ -30,6 +31,7 @@ public class ProjectAndSum implements Iterator<Queue<int[]>>{
 				int keepIndex = colsToSum[i];
 				this.sums[i] += row[keepIndex];
 			}
+			// DatabaseEngine.finalNumber++;
 		}
 		return null;
 	}
@@ -41,6 +43,8 @@ public class ProjectAndSum implements Iterator<Queue<int[]>>{
 		// System.out.println("HERE");
 		// for (int i : colsToSum)
 		// 	System.out.println(i + " ");
+
+		// System.out.println(DatabaseEngine.finalNumber);
 
 		StringBuilder sb = new StringBuilder();
 		if (hasRows) {

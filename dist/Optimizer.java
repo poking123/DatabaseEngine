@@ -17,9 +17,11 @@ public class Optimizer {
 	
 	private HashMap<String, String> bestOrderMap;
 	private ArrayList<HashMap<Character, String>> whereTables;
+	private ArrayList<HashMap<Character, String>> tempWhereTables;
 
 	private Queue<Queue<RAOperation>> tablesQueue;
 	private Queue<Queue<Predicate>> predicatesQueue;
+	private Queue<Queue<Boolean>> switchesQueue;
 	
 	private Queue<Predicate> finalPredicateQueue;
 	private int[] columnsToSum;
@@ -27,6 +29,7 @@ public class Optimizer {
 	private HashMap<Character, ArrayList<int[]>> tablePredicateMap;
 
 	private HashMap<Character, HashSet<Character>> possibleJoinsMap;
+
 	
 	public Optimizer() {
 		predicateJoinQueueMap = new HashMap<>();
@@ -38,6 +41,8 @@ public class Optimizer {
 		
 		finalPredicateQueue = new LinkedList<>();
 		columnsToSum = new int[1];
+
+		switchesQueue = new LinkedList<>();
 	}
 	
 	public Queue<Queue<RAOperation>> getTablesQueue() {
@@ -46,6 +51,10 @@ public class Optimizer {
 
 	public Queue<Queue<Predicate>> getPredicatesQueue() {
 		return this.predicatesQueue;
+	}
+
+	public Queue<Queue<Boolean>> getswitchesQueue() {
+		return this.switchesQueue;
 	}
 	
 	public int[] getColumnsToSum() {
@@ -245,7 +254,7 @@ public class Optimizer {
 		return fromData;
 	}
 	
-	public double estimatePredicateRows(int tableNumRows, int min, int max, int uniqueColValues, int operator, int compareValue) {
+	public double estimatePredicateRows(double tableNumRows, int min, int max, int uniqueColValues, int operator, int compareValue) {
 		switch (operator) {
 			case 0: // equals
 				return (double) tableNumRows / uniqueColValues;
@@ -292,16 +301,27 @@ public class Optimizer {
 		// String bestOrder = computeBest(newFromData); /////////////////////////////////////////////////////////////////
 		String bestOrder = computeBest(fromData);
 
-		char c1 = bestOrder.charAt(0);
-		char c2 = bestOrder.charAt(1);
+		String c1 = bestOrder.substring(0, 1);
+		String c2 = bestOrder.substring(1, 2);
 
-		if (Character.isUpperCase(c1) && Character.isLowerCase(c2)) { // first table has a predicate - we are fine
-			// switch order of the first two tables - predicate is first
-			String subString = bestOrder.substring(2);
-			return c2 + "" + c1 + subString;
+		double cost1 = estimateCost(c1);
+		double cost2 = estimateCost(c2);
+
+		// makes sure the smaller table is first
+		if (cost2 < cost1) {
+			return c2 + "" + c1 + bestOrder.substring(2);
 		} else {
 			return bestOrder;
 		}
+
+		// OLD - made sure the second table wasn't a predicate
+		// if (Character.isUpperCase(c1) && Character.isLowerCase(c2)) { // first table has a predicate - we are fine
+		// 	// switch order of the first two tables - predicate is first
+		// 	String subString = bestOrder.substring(2);
+		// 	return c2 + "" + c1 + subString;
+		// } else {
+		// 	return bestOrder;
+		// }
 		
 		
 	}
@@ -311,21 +331,21 @@ public class Optimizer {
 		if (bestOrderMap.containsKey(rels))
 			return bestOrderMap.get(rels);
 		
-			float bestCost = Long.MAX_VALUE;
+		double bestCost = Long.MAX_VALUE;
 		String bestOrder = rels;
 		
 		for (char c : rels.toCharArray()) {
 			// System.out.println("The char c is " + c);
 			String internalOrder = computeBest(rels.replace(Character.toString(c), ""));
 			// System.out.println("internalOrder is " + internalOrder);
-			float cost1 = cost(c + internalOrder);
-			float cost2 = cost(internalOrder + c);
+			double cost1 = cost(c + internalOrder);
+			double cost2 = cost(internalOrder + c);
 
 			// System.out.println("cost for " + (c + internalOrder) + " is " + cost1);
 			// System.out.println("cost for " + (internalOrder + c) + " is " + cost2);
 
 			String internalBestOrder = "";
-			float internalBestCost = -1;
+			double internalBestCost = -1;
 			if (cost1 < cost2) { // checks the two costs, and saves the better order
 				internalBestOrder = c + internalOrder;
 				internalBestCost = cost1;
@@ -344,17 +364,166 @@ public class Optimizer {
 		
 		// System.out.println("Last rels is " + rels);
 		bestOrderMap.put(rels, bestOrder);
-		// System.out.println(bestOrderMap.containsKey(rels));
-		// System.out.println("result: " + bestOrderMap.get(rels));
-		// System.out.println(bestOrderMap);
+		// System.out.println("bestCost is " + bestCost);
 		return bestOrder;
 	}
 
-	// NEW COST - Global Method
-	public float cost(String tables) {
+	public double estimateCost(String tables) {
+		///
+		// String testTable = "BA";
+		///
+
+		double product = 1;
+
+		HashMap<Character, Double> predicateRowsMap = new HashMap<>();
+		
+		HashSet<Character> joinedTables = new HashSet<>();
+		// join another table - add the product to totalSum
+		for (int i = 0; i < tables.length(); i++) {
+			char currTable = tables.charAt(i);
+			joinedTables.add(currTable); // adds the table to the set of joined tables
+
+			// check for predicate
+			String tableName = currTable + ".dat";
+			double tableNumRows = Catalog.getRows(tableName);
+
+			// System.out.println("product before row multiplication is " + product);
+			product *= tableNumRows;
+			// System.out.println("product after row multiplication is " + product);
+			predicateRowsMap.put(currTable, tableNumRows);
+
+
+			if (tablePredicateMap.containsKey(currTable)) { // predicate map - tablePredicateMap
+				ArrayList<int[]> predDataList = tablePredicateMap.get(currTable);
+				for (int[] predData : predDataList) {
+					int column = predData[3];
+
+					// System.out.println("column is " + column);
+					// System.out.println("min is " + Catalog.getMin(tableName, column));
+					// System.out.println("max is " + Catalog.getMax(tableName, column));
+					// System.out.println("operator is " + predData[1]);
+					// System.out.println("compareValue is " + predData[2]);
+					// System.out.println("estimatePredicateRows is " + estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]));
+					// System.out.println("tableNumRows is " + tableNumRows);
+					// System.out.println("before upper product is " + product);
+					// System.out.println("to multiply to product is " + (estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]) / tableNumRows));
+					double predicateEstimateRows = estimatePredicateRows(tableNumRows, Catalog.getMin(tableName, column), Catalog.getMax(tableName, column), Catalog.getUnique(tableName, column), predData[1], predData[2]) / tableNumRows;
+					predicateRowsMap.put(currTable, predicateRowsMap.get(currTable) * predicateEstimateRows);
+					// System.out.println("per is " + predicateEstimateRows);
+					// System.out.println("upper product before is " + product);
+					product *= (double) predicateEstimateRows;
+					// System.out.println("upper product after is " + product);
+				}
+			}
+
+			// multiplies by the number of rows in the table
+			
+
+			// check for joins if we're not at the first table
+			if (i > 0) {
+				boolean hasJoinPredicate = false;
+				// System.out.println("getting here");
+				// System.out.println("whereTables size is " + whereTables.size());
+				ArrayList<HashMap<Character, String>> tempTempWhereTables = new ArrayList<>(this.tempWhereTables);
+				Iterator<HashMap<Character, String>> tempWhereTablesItr = tempTempWhereTables.iterator();
+				while (tempWhereTablesItr.hasNext()) { // iterates through all the joins
+					HashMap<Character, String> joinMap = tempWhereTablesItr.next();
+					char[] joinTables = new char[2];
+					int[] joinColumns = new int[2];
+					int tableNumber = 0;
+					boolean foundMap = false;
+
+					if (joinMap.keySet().contains(currTable)) { // if the current join has the current table
+						foundMap = true;
+						for (char c : joinMap.keySet()) {
+							if (!joinedTables.contains(c)) {
+								foundMap = false;
+								break;
+							}
+							joinTables[tableNumber] = c;
+							String tableAndColumn = joinMap.get(c);
+							joinColumns[tableNumber] = Integer.parseInt(tableAndColumn, 3, tableAndColumn.length(), 10);
+							tableNumber++;
+						}
+					}
+					
+
+					if (foundMap) {
+						// System.out.println("found map");
+						hasJoinPredicate = true;
+						// check which columns are keys
+						long table1NumRows = Math.round(predicateRowsMap.get(joinTables[0]));
+						long table2NumRows = Math.round(predicateRowsMap.get(joinTables[1]));
+
+						long table1OriginalRows = Catalog.getRows(joinTables[0] + ".dat");
+						long table2OriginalRows = Catalog.getRows(joinTables[1] + ".dat");
+
+						double perc1 = (double) table1NumRows / table1OriginalRows;
+						double perc2 = (double) table2NumRows / table2OriginalRows;
+
+						long table1NumUniqueCol = Catalog.getUnique(joinTables[0] + ".dat", joinColumns[0]);
+						long table2NumUniqueCol = Catalog.getUnique(joinTables[1] + ".dat", joinColumns[1]);
+
+						boolean table1IsKey = (table1NumUniqueCol == table1OriginalRows) || (table1NumUniqueCol == table1OriginalRows - 1);
+						boolean table2IsKey = (table2NumUniqueCol == table2OriginalRows) || (table2NumUniqueCol == table2OriginalRows - 1);
+
+						// table1NumUniqueCol *= perc1;
+						// table2NumUniqueCol *= perc2;
+
+						table1NumUniqueCol = (table1NumUniqueCol <= 0) ? 1 : table1NumUniqueCol;
+						table2NumUniqueCol = (table2NumUniqueCol <= 0) ? 1 : table2NumUniqueCol;
+
+						long minUnique = table1NumUniqueCol < table2NumUniqueCol ? table1NumUniqueCol : table2NumUniqueCol;
+
+						// if (tables.equals(testTable)) {
+						// 	System.out.println("table1 is key is " + table1IsKey);
+						// 	System.out.println("table2 is key is " + table2IsKey);
+						// }
+						
+
+						long maxRows = table1NumRows * table2NumRows;
+						long estimateRows = -1;
+						// not sure what are keys
+						if (table1IsKey && table2IsKey) { // both columns are keys
+							estimateRows = (table1NumRows < table2NumRows) ? table1NumRows : table2NumRows;
+						} else if (table1IsKey || table2IsKey) { // one table is a key
+							estimateRows = (table1NumRows > table2NumRows) ? table1NumRows : table2NumRows;
+						} else { // no keys
+							estimateRows = table1NumRows * table2NumRows * minUnique / table1NumUniqueCol / table2NumUniqueCol; // updates number of rows
+						}
+
+						// if (tables.equals(testTable)) {
+						// 	System.out.println("table1NumUniqueCol is " + table1NumUniqueCol);
+						// 	System.out.println("table2NumUniqueCol is " + table2NumUniqueCol);
+						// 	System.out.println("minUnique is " + minUnique);
+						// 	System.out.println("table1NumRows is " + table1NumRows);
+						// 	System.out.println("table2NumRows is " + table2NumRows);
+						// 	System.out.println("estimateRows is " + (double) estimateRows);
+						// 	System.out.println("max rows is " + maxRows);
+						// 	System.out.println("non-predicate before product is " + product);
+						// 	System.out.println("non-predicate to multiply is " + ((double) estimateRows / maxRows));
+						// }
+							
+						product *= (double) estimateRows / maxRows;
+						// if (tables.equals(testTable)) {
+						// 	System.out.println("non-predicate after product is " + product);
+						// }
+						
+						tempWhereTablesItr.remove(); // removes joinMap to make searching shorter next time and for one table equijoins at the end
+
+					}
+				}
+			}
+		}
+
+
+		return product;
+	}
+
+	public double cost(String tables) {
 		// System.out.println("tables is " + tables);
-		float product = 1;
-		float totalSum = 0;
+		double product = 1;
+		double totalSum = 0;
 		
 		HashSet<Character> joinedTables = new HashSet<>();
 		// join another table - add the product to totalSum
@@ -368,7 +537,7 @@ public class Optimizer {
 			if (tablePredicateMap.containsKey(currTable)) {
 				ArrayList<int[]> predDataList = tablePredicateMap.get(currTable);
 				for (int[] predData : predDataList) {
-					int column = predData[0];
+					int column = predData[3];
 
 					// System.out.println("min is " + Catalog.getMin(tableName, column));
 					// System.out.println("max is " + Catalog.getMax(tableName, column));
@@ -441,7 +610,7 @@ public class Optimizer {
 						// System.out.println("max rows is " + maxRows);
 						// System.out.println("non-predicate before product is " + product);
 						// System.out.println("non-predicate to multiply is " + ((float) estimateRows / maxRows));
-						product *= (float) estimateRows / maxRows;
+						product *= (double) estimateRows / maxRows;
 						// System.out.println("non-predicate after product is " + product);
 					}
 				}
@@ -689,6 +858,7 @@ public class Optimizer {
 		}
 
 		whereTables = whereData.getTables();
+		tempWhereTables = new ArrayList<>(whereTables);
 		// add whereData columns
 		for (HashMap<Character, String> joinMap : whereTables) {
 			for (char c : joinMap.keySet()) {
@@ -715,7 +885,7 @@ public class Optimizer {
 			for (int[] predData : predicateDataList) {
 				tempList.add(predData[0]); // column number
 			}
-			tableToColumnsToKeep.put(c, tempList);
+			tableToColumnsToKeep.put(c, tempList); // char -> TreeSet
 		}
 
 		
@@ -815,6 +985,7 @@ public class Optimizer {
 
 			Queue<RAOperation> tableQueue = new LinkedList<>();
 			Queue<Predicate> predicateQueue = new LinkedList<>();
+			Queue<Boolean> switchQueue = new LinkedList<>();
 			// HashMap from tableName -> starting index of table
 			// HashMap<Character, Integer> tableNameToStartingIndexMap = new HashMap<>();
 
@@ -829,7 +1000,7 @@ public class Optimizer {
 				bestOrder = bestOrder.charAt(1) + "" + bestOrder.charAt(0) + bestOrder.substring(2);
 			}
 
-			// System.out.println("Best Order is " + bestOrder); 
+			System.err.println("Best Order is " + bestOrder); 
 			char table1 = bestOrder.charAt(0);
 
 			// columns to keep
@@ -850,7 +1021,7 @@ public class Optimizer {
 			String[] headerArr = header.toString().split(",");
 			header.append(','); // add comma
 
-			//if (Character.isLowerCase(table1)) { // predicate
+			char table2PredicateCheck = bestOrder.charAt(1);
 			if (tablePredicateMap.containsKey(table1)) {
 				// add a predicate
 				//table1 = Character.toUpperCase(table1);
@@ -860,6 +1031,9 @@ public class Optimizer {
 					predData[0] = findIndex(headerArr, table1 + ".c" + predData[0]);
 				}
 				predicateQueue.add(new FilterPredicate(predDataList));
+			} else if (tablePredicateMap.containsKey(table2PredicateCheck)){
+				// add placePredicate
+				predicateQueue.add(new PlacePredicate());
 			}
 
 			// add table1 to inJoin
@@ -882,9 +1056,47 @@ public class Optimizer {
 			// Start iterating the other tables - start joining
 			char[] bestOrderCharArr = bestOrder.toCharArray();
 			for (int i = 1; i < bestOrderCharArr.length; i++) {
-				char table2 = bestOrder.charAt(i);
-				StringBuilder header2 = new StringBuilder();
+				
 
+				char table2 = bestOrder.charAt(i);
+
+				boolean doMergeJoin = true;
+				// boolean doMergeJoin = false;
+				// if (table2Rows > 20000) {
+				// 	doMergeJoin = true;
+				// }
+
+				StringBuilder header2 = new StringBuilder();
+				// gets the tables currently in the join
+				String currTable = bestOrder.substring(0, i);
+				// estimates the bigger table
+				boolean switchTables = false;
+				// if (cost(currTable) > Catalog.getRows(table2 + ".dat")) {
+				//if (estimateCost(currTable) >= 5000 && Catalog.getRows(table2 + ".dat") < 20000) {
+					
+				double table1EstimateCost = estimateCost(currTable);
+				double table2EstimateCost = estimateCost(Character.toString(table2));
+				System.out.println("currTable is " + currTable);
+				System.out.println("estimate is " + table1EstimateCost);
+				System.out.println("table2 is " + table2);
+				System.out.println("estimate is " + table2EstimateCost);
+				int threshold = 30000;
+				if (table1EstimateCost >= threshold && table2EstimateCost >= threshold) {
+					switchTables = false;
+					doMergeJoin = true;
+				} else if (table1EstimateCost >= threshold && table2EstimateCost < 2000) {
+					switchTables = true;
+					doMergeJoin = false;
+				} else {
+					switchTables = false;
+					doMergeJoin = false;
+				}
+
+				// testing ----------------------
+				// switchTables = false;
+				// doMergeJoin = false;
+
+				
 				columnsToKeepSet = new TreeSet<>(tableToColumnsToKeep.get(Character.toUpperCase(table2)));
 				columnsToKeep = new int[columnsToKeepSet.size()];
 				columnsToKeepIndex = 0;
@@ -965,9 +1177,7 @@ public class Optimizer {
 					// add fake table
 					tableQueue.add(new Scan("Fake Table"));
 
-					// using starting index map to find the exact join column values
-					// table1JoinCol = tableNameToStartingIndexMap.get(firstTable) + table1JoinCol;
-					// table2JoinCol = tableNameToStartingIndexMap.get(secondTable) + table2JoinCol;
+					switchQueue.add(false);
 
 					// add one table equijoin predicate
 					predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, false));
@@ -997,6 +1207,8 @@ public class Optimizer {
 						columnsToKeepIndex++;
 					}
 
+					
+
 					// add second table
 					tableQueue.add(new Project(new Scan(secondTable + ".dat"), columnsToKeep));
 
@@ -1014,10 +1226,25 @@ public class Optimizer {
 					// System.out.println("table1JoinCol is " + table1JoinCol);
 					///
 
+					if (switchTables) {
+						switchQueue.add(true);
+						predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true, "equijoinWritePredicate"));
+					} else {
+						switchQueue.add(false);
+						if (doMergeJoin) {
+							predicateQueue.add(new MergeJoinPredicate(table1JoinCol, table2JoinCol));
+						} else {
+							predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true));
+						}
+					}
+
 					// adds mergeJoin Predicate
 					// REPLACE MERGE JOIN HERE
-					// predicateQueue.add(new MergeJoinPredicate(table1JoinCol, table2JoinCol));
-					predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true));
+					// if (doMergeJoin) {
+					// 	predicateQueue.add(new MergeJoinPredicate(table1JoinCol, table2JoinCol));
+					// } else {
+					// 	predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true));
+					// }
 
 				} else if (containsSecondTable) {
 
@@ -1067,13 +1294,38 @@ public class Optimizer {
 					// System.out.println("table1JoinCol is " + table1JoinCol);
 					///
 
+					if (switchTables) {
+						switchQueue.add(true);
+						predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true, "equijoinWritePredicate"));
+					} else {
+						switchQueue.add(false);
+						if (doMergeJoin) {
+							predicateQueue.add(new MergeJoinPredicate(table2JoinCol, table1JoinCol));
+						} else {
+							predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true));
+						}
+					}
+
 					// table 2 is now table 1
 					// REPLACE MERGE JOIN HERE
-					//predicateQueue.add(new MergeJoinPredicate(table2JoinCol, table1JoinCol));
-					predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true));
+					// if (doMergeJoin) {
+					// 	predicateQueue.add(new MergeJoinPredicate(table2JoinCol, table1JoinCol));
+					// } else {
+					// 	predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true));
+					// }
+					
+					
 				}
 
-				header.append(header2); // adds header of second table to first table
+				if (switchTables) { // gets the right order of the header
+					header.insert(0, header2.toString() + ",");
+				} else { // regular
+					header.append(header2); // adds header of second table to first table
+				}
+				
+				// regular
+				// header.append(header2); // adds header of second table to first table
+				
 				
 				// System.out.println(header.toString());
 
@@ -1092,6 +1344,10 @@ public class Optimizer {
 						int table1JoinColTemp = findIndex(header.toString().split(","), table1JoinColNameTemp);
 						int table2JoinColTemp = findIndex(header.toString().split(","), table2JoinColNameTemp);
 
+
+						// add false to switchQueue
+						switchQueue.add(false);
+
 						// make 1 table equijoin
 						tableQueue.add(new Scan("Fake Table"));
 						predicateQueue.add(new EquijoinPredicate(table1JoinColTemp, table2JoinColTemp, false));
@@ -1099,8 +1355,13 @@ public class Optimizer {
 					}
 				}
 
-				// adds the comma to header
-				header.append(',');
+				if (!switchTables) {
+					// adds the comma to header
+					header.append(',');
+				}
+
+				// regular
+				// header.append(',');
 
 				
 			}
@@ -1145,8 +1406,10 @@ public class Optimizer {
 			// System.out.println(predicateQueue);
 
 			overallHeader.append(header);
+			
 
 			// adds the table queue and predicate queue
+			this.switchesQueue.add(new LinkedList<>(switchQueue));
 			this.tablesQueue.add(new LinkedList<>(tableQueue));
 			this.predicatesQueue.add(new LinkedList<>(predicateQueue));
 		}

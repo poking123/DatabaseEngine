@@ -89,10 +89,21 @@ public class MergeJoin extends RAOperation {
 			
 			holder1 = new LinkedList<>();
 			holder2 = new LinkedList<>();
+
+			//if (source1Iterator.getType().equals("Project")) {}
+			
 			
 			// External Sorting
+			// long start = System.currentTimeMillis();
 			this.table1FinalName = writeSortedFileToDisk(source1Iterator, 1);
-			this.table2FinalName = writeSortedFileToDisk(source2Iterator, 2);
+			// long stop = System.currentTimeMillis();
+			// System.out.println("table 1 done sorting in " + (stop - start));
+			if (!this.table1FinalName.equals("noRows")) {
+				this.table2FinalName = writeSortedFileToDisk(source2Iterator, 2);
+			}
+			
+			// long lastStop = System.currentTimeMillis();
+			// System.out.println("table 2 done sorting in " + (lastStop - stop));
 
 			
 			
@@ -207,7 +218,7 @@ public class MergeJoin extends RAOperation {
 			
 
 			
-			while (rowsToReturn.size() < DatabaseEngine.bufferSize) {
+			while (rowsToReturn.size() < DatabaseEngine.mergejoinBufferSize) {
 				// System.out.println("Rows to return size is " + rowsToReturn.size());
 				// System.out.println("table1Done is " + table1Done);
 				// System.out.println("table2Done is " + table2Done);
@@ -523,7 +534,7 @@ public class MergeJoin extends RAOperation {
 				}
 
 				// checks to make sure rowsToReturn hasn't exceeded the bufferSize
-				if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
+				if (rowsToReturn.size() > DatabaseEngine.mergejoinBufferSize) {
 					return true;
 				}
 
