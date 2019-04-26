@@ -30,7 +30,7 @@ public class Loader {
 	}
 
 	public void readCSVFile(String path) throws FileNotFoundException, IOException {
-		int tableNameIndex = path.lastIndexOf('/') + 1;
+		int tableNameIndex = path.lastIndexOf('\\') + 1;
 		// String tableName = path.substring(tableNameIndex, tableNameIndex + 1);
 		char tableName = path.charAt(tableNameIndex);
 

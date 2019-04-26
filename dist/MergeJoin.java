@@ -17,14 +17,19 @@ public class MergeJoin extends RAOperation {
 	private Iterable<Queue<int[]>> source2;
 	private String type;
 	private MergeJoinPredicate mergeJoinPredicate;
-	// private int[] colsToKeep;
+	private int[] colsToSum;
+	private long[] sums;
+	private boolean hasRows = false;
 	
-	public MergeJoin(RAOperation source1, RAOperation source2, MergeJoinPredicate mergeJoinPredicate) {
+	public MergeJoin(RAOperation source1, RAOperation source2, MergeJoinPredicate mergeJoinPredicate, int[] colsToSum) {
 		this.source1 = source1;
 		this.source2 = source2;
 		this.mergeJoinPredicate = mergeJoinPredicate;
 		this.type = "MergeJoin";
-		// this.colsToKeep = colsToKeep;
+		this.colsToSum = colsToSum;
+		if (this.colsToSum != null) {
+			this.sums = new long[this.colsToSum.length];
+		}
 	}
 
 	@Override
@@ -183,7 +188,27 @@ public class MergeJoin extends RAOperation {
 		
 		@Override
 		public boolean hasNext() {
-			return this.hasCombinationsLeft || (!this.noHasNext && (!table1Done || !table2Done));
+			boolean hasNextMerge = this.hasCombinationsLeft || (!this.noHasNext && (!table1Done || !table2Done));
+			if (hasNextMerge == false) {
+				if (colsToSum == null) return false;
+				
+				StringBuilder sb = new StringBuilder();
+				if (hasRows) {
+					for (int i = 0; i < sums.length - 1; i++) {
+						sb.append(sums[i] + ",");
+					}
+					sb.append(sums[sums.length - 1]);
+				} else {
+					for (int i = 0; i < sums.length - 1; i++) {
+						sb.append(",");
+					}
+					// return "no results";
+				}
+				System.out.println(sb.toString());
+				return false;
+			} else {
+				return true;
+			}
 		}
 
 		@Override
@@ -529,14 +554,25 @@ public class MergeJoin extends RAOperation {
 					// 	newRow[i] = oldRow[this.colsToKeep[i]];
 					// }
 					// rowsToReturn.add(newRow);
-
-					rowsToReturn.add(combineRows(dis1Row, dis2QueueItr.next()));
+					int[] newRow = combineRows(dis1Row, dis2QueueItr.next());
+					if (colsToSum == null) {
+						rowsToReturn.add(newRow);
+					} else {
+						hasRows = true;
+						for (int i = 0; i < colsToSum.length; i++) {
+							int keepIndex = colsToSum[i];
+							sums[i] += newRow[keepIndex];
+						}
+					}
 				}
 
-				// checks to make sure rowsToReturn hasn't exceeded the bufferSize
-				if (rowsToReturn.size() > DatabaseEngine.mergejoinBufferSize) {
-					return true;
+				if (colsToSum == null) {
+					// checks to make sure rowsToReturn hasn't exceeded the bufferSize
+					if (rowsToReturn.size() > DatabaseEngine.mergejoinBufferSize) {
+						return true;
+					}
 				}
+				
 
 			}
 

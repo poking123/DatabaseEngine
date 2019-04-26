@@ -34,14 +34,6 @@ public class ExecutionEngine {
 						break;
 
 					case "filterPredicate": // take off from deque, filter, and put on result queue
-						// OLD FILTER
-						// RAOperation operation = tableQueue.remove();
-						// FilterPredicate fp = (FilterPredicate) currentPredicate;
-						// Filter filter = new Filter(operation, fp);
-						// resultQueue.add(filter); // adds result to result queue
-						// break;
-
-						// RAOperation operation = tableQueue.remove();
 						FilterPredicate fp = (FilterPredicate) currentPredicate;
 						FilterProjectScan filterProjectScan = new FilterProjectScan(fp);
 						resultQueue.add(filterProjectScan); // adds result to result queue
@@ -58,12 +50,23 @@ public class ExecutionEngine {
 						RAOperation table1 = resultQueue.remove();
 						RAOperation table2 = resultQueue.remove();
 
-						Equijoin equijoin = new Equijoin(table1, table2, ep); // dummy declaration
-						if (switchQueue.remove()) {
-							equijoin = new Equijoin(table2, table1, ep);
+						Equijoin equijoin = new Equijoin(table1, table2, null, ep); // dummy declaration
+						if (predicateQueue.isEmpty()) { // last join
+							// Equijoin equijoin = new Equijoin(table1, table2, columnsToSum, ep); // dummy declaration
+							if (switchQueue.remove()) {
+								equijoin = new Equijoin(table2, table1, columnsToSum,  ep);
+							} else {
+								equijoin = new Equijoin(table1, table2, columnsToSum,  ep);
+							}
 						} else {
-							equijoin = new Equijoin(table1, table2, ep);
+							if (switchQueue.remove()) {
+								equijoin = new Equijoin(table2, table1, null, ep);
+							} else {
+								equijoin = new Equijoin(table1, table2, null, ep);
+							}
 						}
+
+						
 
 						// Equijoin equijoin = new Equijoin(table1, table2, ep);
 						//Equijoin equijoin = new Equijoin(table2, table1, ep); // making hash on smaller table?
@@ -75,7 +78,7 @@ public class ExecutionEngine {
 						// gets two tables
 						RAOperation disjointTable1 = tableQueue.remove();
 						RAOperation disjointTable2 = tableQueue.remove();
-						Equijoin disjointEquijoin = new Equijoin(disjointTable1, disjointTable2, ep2);
+						Equijoin disjointEquijoin = new Equijoin(disjointTable1, disjointTable2, null, ep2);
 
 						resultQueue.add(disjointEquijoin);
 						break;
@@ -90,11 +93,19 @@ public class ExecutionEngine {
 						RAOperation mgTable1 = resultQueue.remove();
 						RAOperation mgTable2 = resultQueue.remove();
 
-						MergeJoin mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
-						if (switchQueue.remove()) { // not needed because it's merge join?
-							mergeJoin = new MergeJoin(mgTable2, mgTable1, ep3);
+						MergeJoin mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3, null);
+						if (predicateQueue.isEmpty()) {
+							if (switchQueue.remove()) { // not needed because it's merge join?
+								mergeJoin = new MergeJoin(mgTable2, mgTable1, ep3, columnsToSum);
+							} else {
+								mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3, columnsToSum);
+							}
 						} else {
-							mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
+							if (switchQueue.remove()) { // not needed because it's merge join?
+								mergeJoin = new MergeJoin(mgTable2, mgTable1, ep3, null);
+							} else {
+								mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3, null);
+							}
 						}
 
 						// MergeJoin mergeJoin = new MergeJoin(mgTable1, mgTable2, ep3);
@@ -141,13 +152,12 @@ public class ExecutionEngine {
 		}
 		
 		while (!finalPredicateQueue.isEmpty()) {
-			System.out.println("got in here");
 			EquijoinPredicate currentPredicate = (EquijoinPredicate) finalPredicateQueue.remove();
 			
 			RAOperation table1 = finalDeque.remove();
 			RAOperation table2 = finalDeque.remove();
 			
-			Equijoin disjointEquijoin = new Equijoin(table1, table2, currentPredicate);
+			Equijoin disjointEquijoin = new Equijoin(table1, table2, null, currentPredicate);
 			finalDeque.addFirst(disjointEquijoin);
 		}
 		
@@ -155,11 +165,16 @@ public class ExecutionEngine {
 		RAOperation finalOperation = finalDeque.pop(); // should only have 1 operation left in the queue
 		// System.out.println("finalDeque: " + finalDeque);
 		// System.out.println("final Operation is " + finalOperation);
-		ProjectAndSum pas = new ProjectAndSum(finalOperation.iterator(), columnsToSum);
-		while (pas.hasNext()) {
-			pas.next();
+		// ProjectAndSum pas = new ProjectAndSum(finalOperation.iterator(), columnsToSum);
+		// while (pas.hasNext()) {
+		// 	pas.next();
+		// }
+		// System.out.println(pas.getSumString());
+		Iterator<Queue<int[]>> finalOperationItr = finalOperation.iterator();
+
+		while (finalOperationItr.hasNext()) {
+			finalOperationItr.next();
 		}
-		System.out.println(pas.getSumString());
 	}
 	
 	public int findIndex(String[] columnNames, String columnName) {
