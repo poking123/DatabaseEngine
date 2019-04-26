@@ -6,7 +6,6 @@ import java.util.Queue;
 public class Filter extends RAOperation {
 	private Iterable<Queue<int[]>> source;
 	private FilterPredicate predicate;
-	// private int[] colsToKeep;
 
 	private String type;
 	

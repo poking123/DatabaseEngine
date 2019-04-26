@@ -42,11 +42,11 @@ public class DatabaseEngine {
 		// l2 dataset
 		// String CSVFiles = "../../data/l2/B.csv,../../data/l2/C.csv,../../data/l2/A.csv,../../data/l2/D.csv,../../data/l2/E.csv,../../data/l2/F.csv";
 		
-		long start = System.currentTimeMillis();
+		// long start = System.currentTimeMillis();
 		// Loader loads all the data into storage
 		loader.readAllCSVFiles(CSVFiles);
-		long stop = System.currentTimeMillis();
-		System.err.println("Loading Time : " + (stop - start));
+		// long stop = System.currentTimeMillis();
+		// System.err.println("Loading Time : " + (stop - start));
 		// System.out.println();
 		// System.err.println("Size of map is " + DatabaseEngine.sortedColumnsMap.size());
 		
@@ -229,7 +229,7 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		// scanner = new Scanner(new File("../../data/l2/queries.sql"));
+		// scanner = new Scanner(new File("../../data/xxxs/queries.sql"));
 		// scanner = new Scanner(new File("../../data/l2/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
@@ -256,11 +256,11 @@ public class DatabaseEngine {
 			// Gets rid of all the data in the parser
 			parser.empty();
 
-			start = System.currentTimeMillis();
+			// start = System.currentTimeMillis();
 			// Execute Query
 			executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum(), optimizer.getswitchesQueue());
-			stop = System.currentTimeMillis();
-			System.err.println("Execution Time: " + (stop - start));
+			// stop = System.currentTimeMillis();
+			// System.err.println("Execution Time: " + (stop - start));
 			// totalExecutionTime += (stop - start);
 
 			
@@ -270,11 +270,11 @@ public class DatabaseEngine {
 
 		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		
-		start = System.currentTimeMillis();
+		// start = System.currentTimeMillis();
 		// Execute Query
 		executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum(), optimizer.getswitchesQueue());
-		stop = System.currentTimeMillis();
-		System.err.println("Execution Time: " + (stop - start));
+		// stop = System.currentTimeMillis();
+		// System.err.println("Execution Time: " + (stop - start));
 		// totalExecutionTime += (stop - start);
 		
 		// long totalStop = System.currentTimeMillis();

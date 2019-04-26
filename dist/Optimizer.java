@@ -996,11 +996,11 @@ public class Optimizer {
 			String bestOrder = bestOrders.remove(); // String in the best order for table joinings
 
 			// switch order if first table is not a predicate and second table is a predicate
-			if (!tablePredicateMap.containsKey(bestOrder.charAt(0)) && tablePredicateMap.containsKey(bestOrder.charAt(1))) {
-				bestOrder = bestOrder.charAt(1) + "" + bestOrder.charAt(0) + bestOrder.substring(2);
-			}
+			// if (!tablePredicateMap.containsKey(bestOrder.charAt(0)) && tablePredicateMap.containsKey(bestOrder.charAt(1))) {
+			// 	bestOrder = bestOrder.charAt(1) + "" + bestOrder.charAt(0) + bestOrder.substring(2);
+			// }
 
-			System.err.println("Best Order is " + bestOrder); 
+			// System.err.println("Best Order is " + bestOrder); 
 			char table1 = bestOrder.charAt(0);
 
 			// columns to keep
@@ -1030,7 +1030,7 @@ public class Optimizer {
 					int[] predData = predDataList.get(i);
 					predData[0] = findIndex(headerArr, table1 + ".c" + predData[0]);
 				}
-				predicateQueue.add(new FilterPredicate(predDataList));
+				predicateQueue.add(new FilterPredicate(predDataList, table1 + ".dat", columnsToKeep));
 			} else if (tablePredicateMap.containsKey(table2PredicateCheck)){
 				// add placePredicate
 				predicateQueue.add(new PlacePredicate());
@@ -1041,7 +1041,9 @@ public class Optimizer {
 
 			// Add table
 			//tableQueue.add(new Project(new Scan(table1 + ".dat"), Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
-			tableQueue.add(new ProjectScan(table1 + ".dat", Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
+			if (!tablePredicateMap.containsKey(table1)) {
+				tableQueue.add(new ProjectScan(table1 + ".dat", Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
+			}
 
 			// starting index map
 			// int table1NumCols = Catalog.getColumns(table1 + ".dat");
@@ -1121,7 +1123,7 @@ public class Optimizer {
 						int[] predData = predDataList.get(j);
 						predData[0] = findIndex(header2Arr, table2 + ".c" + predData[0]);
 					}
-					predicateQueue.add(new FilterPredicate(predDataList)); // add predicate data
+					predicateQueue.add(new FilterPredicate(predDataList, table2 + ".dat", Arrays.copyOf(columnsToKeep, columnsToKeep.length))); // add predicate data
 				}
 
 				// add scan anyways
@@ -1212,8 +1214,9 @@ public class Optimizer {
 
 					// add second table
 					//tableQueue.add(new Project(new Scan(secondTable + ".dat"), columnsToKeep));
-					tableQueue.add(new ProjectScan(secondTable + ".dat", columnsToKeep));
-
+					if (!tablePredicateMap.containsKey(secondTable)) {
+						tableQueue.add(new ProjectScan(secondTable + ".dat", Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
+					}
 					// need to update table 1 join col - table 2 join col is fine
 					// table1JoinCol = tableNameToStartingIndexMap.get(firstTable) + table1JoinCol;
 
@@ -1274,7 +1277,9 @@ public class Optimizer {
 
 					// add first table
 					// tableQueue.add(new Project(new Scan(firstTable + ".dat"), columnsToKeep));
-					tableQueue.add(new ProjectScan(firstTable + ".dat", columnsToKeep));
+					if (!tablePredicateMap.containsKey(firstTable)) {
+						tableQueue.add(new ProjectScan(firstTable + ".dat", Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
+					}
 
 					// need to update table 2 join col - table 1 join col is fine
 					// table2JoinCol = tableNameToStartingIndexMap.get(secondTable) + table2JoinCol;
@@ -1409,7 +1414,7 @@ public class Optimizer {
 			// System.out.println(predicateQueue);
 
 			overallHeader.append(header);
-			
+			// System.out.println(overallHeader.toString());
 
 			// adds the table queue and predicate queue
 			this.switchesQueue.add(new LinkedList<>(switchQueue));
@@ -1430,350 +1435,10 @@ public class Optimizer {
 		
 		for (int i = 0; i < columnNamesArr.length; i++) {
 			String tableAndColumn = columnNamesArr[i];
-			// char table = tableAndColumn.charAt(0);
-			// int cIndex = tableAndColumn.indexOf("c");
-
-			// int column = Integer.parseInt(tableAndColumn.substring(cIndex + 1, tableAndColumn.length()));
-
 			this.columnsToSum[i] = findIndex(overallHeader.toString().split(","), tableAndColumn);
 		}
 
-		// System.out.println("total Starting index map:");
-		// System.out.println(totalStartingIndexMap);
-
-		// System.out.println("colsToSum length is " + this.columnsToSum.length);
-		// System.out.println("colsToSum is " + this.columnsToSum[0]);
-
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////
-		// HashMap<Character, ArrayList<int[]>> tablePredicateMap = andData.getTablePredicateMap();
-
-		// // System.out.println("columnNames is " + columnNames);
-		// // System.out.println("fromData is " + fromData);
-		// // System.out.println("tablePredicateMap is " + tablePredicateMap);
 		
-		// Queue<RAOperation> tableQueue = new LinkedList<>();
-		// Queue<Predicate> predicateQueue = new LinkedList<>();
-		
-		// // whereTables is an arraylist of maps from table -> table.columnNumber
-		// whereTables = whereData.getTables();
-
-		// HashMap<Character, String> firstJoin = whereTables.get(0);
-		// whereTables.remove(0);
-		
-		
-		// HashSet<Character> joinedTables = new HashSet<>(firstJoin.keySet());
-		// Iterator<Character> joinedTablesItr = joinedTables.iterator();
-		// // only two tables
-		// char firstTable = joinedTablesItr.next();
-		// char secondTable = joinedTablesItr.next();		
-		
-
-		// boolean predicateMapContainsFirstTable = tablePredicateMap.containsKey(firstTable);
-		// boolean predicateMapContainsSecondTable = tablePredicateMap.containsKey(secondTable);
-
-		// if (predicateMapContainsFirstTable && predicateMapContainsSecondTable) {
-		// 	// add both tables and preserve their order
-		// 	// add table1
-		// 	ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
-		// 	tableQueue.add(new Scan(firstTable + ".dat"));
-		// 	predicateQueue.add(new FilterPredicate(predData));
-		// 	// add table2
-		// 	predData = tablePredicateMap.get(secondTable);
-		// 	tableQueue.add(new Scan(secondTable + ".dat"));
-		// 	predicateQueue.add(new FilterPredicate(predData));
-		// } else if (predicateMapContainsFirstTable) {
-		// 	// order is preserved
-		// 	// add first table
-		// 	ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
-		// 	tableQueue.add(new Scan(firstTable + ".dat"));
-		// 	predicateQueue.add(new FilterPredicate(predData));
-		// 	// add second table (no predicate)
-		// 	tableQueue.add(new Scan(secondTable + ".dat"));
-		// } else if (predicateMapContainsSecondTable) {
-		// 	// switch order 
-		// 	char temp = firstTable;
-		// 	firstTable = secondTable;
-		// 	secondTable = temp;
-		// 	// add first table
-		// 	ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
-		// 	tableQueue.add(new Scan(firstTable + ".dat"));
-		// 	predicateQueue.add(new FilterPredicate(predData));
-		// 	// add second table (no predicate)
-		// 	tableQueue.add(new Scan(secondTable + ".dat"));
-		// } else { // neither table has a predicate
-		// 	// just add both tables
-		// 	tableQueue.add(new Scan(firstTable + ".dat"));
-		// 	tableQueue.add(new Scan(secondTable + ".dat"));
-
-		// }
-		
-		// String firstJoinColumn = firstJoin.get(firstTable);
-		// String secondJoinColumn = firstJoin.get(secondTable);
-		
-		// // makes the header
-		// StringBuilder header = new StringBuilder();
-		// StringBuilder overallHeader = new StringBuilder();
-		// String firstHeader = Catalog.getHeader(firstTable + ".dat");
-		// String secondHeader = Catalog.getHeader(secondTable + ".dat");
-		// header.append(firstHeader + "," + secondHeader);
-		
-		// int firstTableJoinCol = findIndex(firstHeader.split(","), firstJoinColumn);
-		// int secondTableJoinCol = findIndex(secondHeader.split(","), secondJoinColumn);
-		
-		// // Adds equijoin to predicateQueue
-		// predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
-		
-		// boolean lastIsDisjoint = false;
-		// // goes through whereTables and joins table to the table we already made
-		// while (!whereTables.isEmpty()) {
-		// 	lastIsDisjoint = false;
-
-		// 	int beforeSize = joinedTables.size();
-		// 	Iterator<HashMap<Character, String>> whereTablesItr = whereTables.iterator();
-		// 	while (whereTablesItr.hasNext()) {
-		// 		// System.out.println("In Where Tables");
-		// 		// System.out.println("whereTables is " + whereTables);
-		// 		HashMap<Character, String> tempMap = whereTablesItr.next();
-		// 		HashSet<Character> tablesCharSet = new HashSet<>(tempMap.keySet());
-				
-		// 		Iterator<Character> tablesCharSetItr = tablesCharSet.iterator();
-		// 		char tempTable1 = tablesCharSetItr.next();
-		// 		char tempTable2 = tablesCharSetItr.next();
-				
-		// 		// join columns (Strings)
-		// 		firstJoinColumn = tempMap.get(tempTable1);
-		// 		secondJoinColumn = tempMap.get(tempTable2);
-				
-		// 		// header of the already made table
-		// 		String[] firstTableHeaderArr = header.toString().split(",");
-				
-		// 		// if both tables are in the already made table, do a 1 table equijoin
-		// 		boolean containsTable1 = joinedTables.contains(tempTable1);
-		// 		boolean containsTable2 = joinedTables.contains(tempTable2);
-		// 		if (containsTable1 && containsTable2) {
-		// 			// System.out.println("Contains both");
-		// 			// add fake table to tableQueue
-		// 			tableQueue.add(new Scan("FakeTable"));
-		// 			// add one table equijoin to predicateQueue
-		// 			firstTableJoinCol = findIndex(firstTableHeaderArr, firstJoinColumn);
-		// 			secondTableJoinCol = findIndex(firstTableHeaderArr, secondJoinColumn);
-		// 			predicateQueue.add(new EquijoinPredicate(firstTableJoinCol, secondTableJoinCol, false));
-		// 			whereTablesItr.remove();
-		// 		} else if (containsTable1) { // contains table1, but not table2
-		// 			// System.out.println("contains table 1");
-		// 			// adds table2 to joinedTables
-		// 			joinedTables.add(tempTable2);
-		// 			// adds table2 to tableQueue
-		// 			tableQueue.add(new Scan(tempTable2 + ".dat"));
-					
-		// 			// Check for predicates and adds to predicateQueue
-		// 			if (tablePredicateMap.containsKey(tempTable2)) {
-		// 				ArrayList<int[]> predData = tablePredicateMap.get(tempTable2);
-		// 				predicateQueue.add(new FilterPredicate(predData));
-		// 			}
-
-		// 			// updates header
-		// 			String tempHeader = Catalog.getHeader(tempTable2 + ".dat");
-		// 			header.append("," + tempHeader);
-					
-		// 			// adds two table equijoin to predicateQueue
-		// 			firstTableJoinCol = findIndex(firstTableHeaderArr, firstJoinColumn);
-		// 			secondTableJoinCol = findIndex(tempHeader.split(","), secondJoinColumn);
-		// 			predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
-		// 			whereTablesItr.remove();
-		// 		} else if (containsTable2) {
-		// 			// System.out.println("contains table 2");
-		// 			// adds table1 to joinedTables
-		// 			joinedTables.add(tempTable1);
-		// 			// adds table1 to tableQueue
-		// 			tableQueue.add(new Scan(tempTable1 + ".dat"));
-					
-		// 			// Check for predicates and adds to predicateQueue
-		// 			if (tablePredicateMap.containsKey(tempTable1)) {
-		// 				ArrayList<int[]> predData = tablePredicateMap.get(tempTable1);
-		// 				predicateQueue.add(new FilterPredicate(predData));
-		// 			}
-					
-		// 			// updates header
-		// 			String tempHeader = Catalog.getHeader(tempTable1 + ".dat");
-		// 			header.append("," + tempHeader);
-					
-		// 			// adds two table equijoin to predicateQueue
-		// 			firstTableJoinCol = findIndex(firstTableHeaderArr, secondJoinColumn);
-		// 			secondTableJoinCol = findIndex(tempHeader.split(","), firstJoinColumn);
-		// 			predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
-		// 			whereTablesItr.remove();
-		// 		}
-		// 		// else (disjoint join, so skip)
-		// 	}
-		// 	int afterSize = joinedTables.size();
-		// 	if (beforeSize == afterSize) {
-		// 		lastIsDisjoint = true;
-
-		// 		tablesQueue.add(new LinkedList<>(tableQueue));
-		// 		predicatesQueue.add(new LinkedList<>(predicateQueue));
-		// 		tableQueue.clear();
-		// 		predicateQueue.clear();
-				
-		// 		firstJoin = whereTables.get(0);
-		// 		joinedTables = new HashSet<>(firstJoin.keySet());
-		// 		whereTables.remove(0);
-				
-		// 		// gets the table names
-		// 		joinedTablesItr = joinedTables.iterator();
-		// 		// only two tables
-		// 		firstTable = joinedTablesItr.next();
-		// 		secondTable = joinedTablesItr.next();
-				
-		// 		// adds to overall header
-		// 		if (overallHeader.length() > 0) {
-		// 			overallHeader.append("," + header.toString());
-		// 		} else {
-		// 			overallHeader.append(new StringBuilder(header));
-		// 		}
-				
-		// 		//resets header
-		// 		header.setLength(0);
-		// 		firstHeader = Catalog.getHeader(firstTable + ".dat");
-		// 		secondHeader = Catalog.getHeader(secondTable + ".dat");
-		// 		header.append(firstHeader + "," + secondHeader);
-				
-				
-		// 		// join columns (String)
-		// 		firstJoinColumn = firstJoin.get(firstTable);
-		// 		secondJoinColumn = firstJoin.get(secondTable);
-		// 		// join columns (int)
-		// 		firstTableJoinCol = findIndex(firstHeader.split(","), firstJoinColumn);
-		// 		secondTableJoinCol = findIndex(secondHeader.split(","), secondJoinColumn);
-				
-		// 		predicateMapContainsFirstTable = tablePredicateMap.containsKey(firstTable);
-		// 		predicateMapContainsSecondTable = tablePredicateMap.containsKey(secondTable);
-
-		// 		if (predicateMapContainsFirstTable && predicateMapContainsSecondTable) {
-		// 			// add both tables and preserve their order
-		// 			// add table1
-		// 			ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
-		// 			tableQueue.add(new Scan(firstTable + ".dat"));
-		// 			predicateQueue.add(new FilterPredicate(predData));
-		// 			// add table2
-		// 			predData = tablePredicateMap.get(secondTable);
-		// 			tableQueue.add(new Scan(secondTable + ".dat"));
-		// 			predicateQueue.add(new FilterPredicate(predData));
-		// 		} else if (predicateMapContainsFirstTable) {
-		// 			// order is preserved
-		// 			// add first table
-		// 			ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
-		// 			tableQueue.add(new Scan(firstTable + ".dat"));
-		// 			predicateQueue.add(new FilterPredicate(predData));
-		// 			// add second table (no predicate)
-		// 			tableQueue.add(new Scan(secondTable + ".dat"));
-		// 		} else if (predicateMapContainsSecondTable) {
-		// 			// switch order 
-		// 			char temp = firstTable;
-		// 			firstTable = secondTable;
-		// 			secondTable = temp;
-		// 			// add first table
-		// 			ArrayList<int[]> predData = tablePredicateMap.get(firstTable);
-		// 			tableQueue.add(new Scan(firstTable + ".dat"));
-		// 			predicateQueue.add(new FilterPredicate(predData));
-		// 			// add second table (no predicate)
-		// 			tableQueue.add(new Scan(secondTable + ".dat"));
-		// 		} else { // neither table has a predicate
-		// 			// just add both tables
-		// 			tableQueue.add(new Scan(firstTable + ".dat"));
-		// 			tableQueue.add(new Scan(secondTable + ".dat"));
-
-		// 		}
-				
-		// 		// Adds equijoin to predicateQueue
-		// 		predicateQueue.add(new MergeJoinPredicate(firstTableJoinCol, secondTableJoinCol));
-
-		// 	}
-		// }
-		
-		// if (!lastIsDisjoint) {
-		// 	tablesQueue.add(new LinkedList<>(tableQueue));
-		// 	predicatesQueue.add(new LinkedList<>(predicateQueue));
-
-		// 	// adds to overall header
-		// 	if (overallHeader.length() > 0) {
-		// 		overallHeader.append("," + header.toString());
-		// 	} else {
-		// 		overallHeader.append(new StringBuilder(header));
-		// 	}
-			
-		// 	// adds disjoint equijoins to the finalPredicateQueue
-			// for (int i = 0; i < predicatesQueue.size() - 1; i++) {
-			// 	finalPredicateQueue.add(new EquijoinPredicate(-3, -3, true)); // adds cross products for the disjoint join
-			// }
-		// }
-		
-		
-		// // System.out.println("Overall Header:++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-		// // System.out.println(overallHeader.toString());
-		// // System.out.println();
-		// String[] overallHeaderArr = overallHeader.toString().split(",");
-		// String[] columnNamesArr = columnNames.split(",");
-		// columnsToSum = new int[columnNamesArr.length];
-		
-		// for (int i = 0; i < columnNamesArr.length; i++) {
-		// 	columnsToSum[i] = findIndex(overallHeaderArr, columnNamesArr[i]);
-		// }
-
-
-		// Second /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//		String bestOrder = selingerAlgorithm(fromData, andData);
-//		System.out.println("bestOrder is " + bestOrder);
-//
-//		
-//
-//		HashSet<Character> includedTables = new HashSet<>();
-//
-//		char[] bestOrderCharArr = bestOrder.toCharArray();
-//		
-//		char firstChar = bestOrderCharArr[0];
-//		includedTables.add(firstChar);
-
-//		String header = Catalog.getHeader(firstChar + ".dat");
-//		String[] headerArr = header.split(",");
-
-		// for (int i = 1; i < bestOrderCharArr.length; i++) {
-		// 	char otherJoinTable = ' ';
-		// 	char table1 = bestOrderCharArr[i];
-		// 	Iterator<HashMap<Character, String>> whereTablesItr = whereTable.iterator();
-		// 	boolean exitLoop = false;
-		// 	while (whereTablesItr.hasNext() && !exitLoop) {
-		// 		HashMap<Character, String> joinMap = whereTablesItr.next();
-		// 		Iterator<Character> includedTablesItr = includedTables.iterator();
-		// 		while (includedTablesItr.hasNext() && !exitLoop) {
-		// 			char table2 = includedTablesItr.next();
-		// 			if (joinMap.containsKey(table1) && joinMap.containsKey(table1)) {
-		// 				otherJoinTable = table1;
-		// 				exitLoop = true;
-		// 			}
-		// 		}
-		// 	}
-
-		// 	if (exitLoop == false) { // other table found
-
-		// 	} else { // no join condition found - cross product
-
-		// 	}
-
-
-		// 	if (Character.isLowerCase(c)) {
-		// 		char uppercase = Character.toUpperCase(c);
-		// 		List<int[]> predicates = tablePredicateMap.get(uppercase);
-		// 		Predicate filterPredicate = new FilterPredicate(predicates);
-
-		// 		tableQueue.add(new Scan(uppercase + ".dat"));
-		// 		predicateQueue.add(filterPredicate);
-		// 	} else {
-
-		// 	}
-		// }
 	}
 
 }

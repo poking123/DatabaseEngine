@@ -6,7 +6,7 @@ import java.util.Queue;
 
 public class ExecutionEngine {
 	
-	public void executeQuery(Queue<Queue<RAOperation>> tablesQueue, Queue<Queue<Predicate>> predicatesQueue, Queue<Predicate> finalPredicateQueue, int[] columnsToSum, Queue<Queue<Boolean>> switchesQueue) {
+	public void executeQuery(Queue<Queue<RAOperation>> tablesQueue, Queue<Queue<Predicate>> predicatesQueue, Queue<Predicate> finalPredicateQueue, int[] columnsToSum, Queue<Queue<Boolean>> switchesQueue) throws FileNotFoundException {
 		
 		Deque<RAOperation> finalDeque = new ArrayDeque<>();
 		
@@ -17,8 +17,8 @@ public class ExecutionEngine {
 			Queue<Predicate> predicateQueue = predicatesQueue.remove();
 			Queue<Boolean> switchQueue = switchesQueue.remove();
 
-			System.err.println(tableQueue);
-			System.err.println(predicateQueue);
+			// System.err.println(tableQueue);
+			// System.err.println(predicateQueue);
 			
 			Deque<RAOperation> resultQueue = new ArrayDeque<>();
 			
@@ -34,10 +34,17 @@ public class ExecutionEngine {
 						break;
 
 					case "filterPredicate": // take off from deque, filter, and put on result queue
-						RAOperation operation = tableQueue.remove();
+						// OLD FILTER
+						// RAOperation operation = tableQueue.remove();
+						// FilterPredicate fp = (FilterPredicate) currentPredicate;
+						// Filter filter = new Filter(operation, fp);
+						// resultQueue.add(filter); // adds result to result queue
+						// break;
+
+						// RAOperation operation = tableQueue.remove();
 						FilterPredicate fp = (FilterPredicate) currentPredicate;
-						Filter filter = new Filter(operation, fp);
-						resultQueue.add(filter); // adds result to result queue
+						FilterProjectScan filterProjectScan = new FilterProjectScan(fp);
+						resultQueue.add(filterProjectScan); // adds result to result queue
 						break;
 						
 					case "equijoinPredicate": 
@@ -134,6 +141,7 @@ public class ExecutionEngine {
 		}
 		
 		while (!finalPredicateQueue.isEmpty()) {
+			System.out.println("got in here");
 			EquijoinPredicate currentPredicate = (EquijoinPredicate) finalPredicateQueue.remove();
 			
 			RAOperation table1 = finalDeque.remove();

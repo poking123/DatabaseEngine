@@ -4,10 +4,22 @@ public class FilterPredicate extends Predicate {
 	private List<int[]> predicates;
 
 	private String type;
+	private String tableName;
+	private int[] columnsToKeep;
 	
-	public FilterPredicate(List<int[]> predicates) {
+	public FilterPredicate(List<int[]> predicates, String tableName, int[] columnsToKeep) {
 		this.predicates = predicates;
 		this.type = "filterPredicate";
+		this.tableName = tableName;
+		this.columnsToKeep = columnsToKeep;
+	}
+
+	public int[] getColumnsToKeep() {
+		return this.columnsToKeep;
+	}
+
+	public String getTableName() {
+		return this.tableName;
 	}
 
 	public String toString() {
