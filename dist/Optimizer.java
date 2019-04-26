@@ -331,7 +331,7 @@ public class Optimizer {
 		if (bestOrderMap.containsKey(rels))
 			return bestOrderMap.get(rels);
 		
-		double bestCost = Long.MAX_VALUE;
+		double bestCost = Double.MAX_VALUE;
 		String bestOrder = rels;
 		
 		for (char c : rels.toCharArray()) {
@@ -1040,7 +1040,8 @@ public class Optimizer {
 			inJoin.add(table1);
 
 			// Add table
-			tableQueue.add(new Project(new Scan(table1 + ".dat"), Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
+			//tableQueue.add(new Project(new Scan(table1 + ".dat"), Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
+			tableQueue.add(new ProjectScan(table1 + ".dat", Arrays.copyOf(columnsToKeep, columnsToKeep.length)));
 
 			// starting index map
 			// int table1NumCols = Catalog.getColumns(table1 + ".dat");
@@ -1076,10 +1077,10 @@ public class Optimizer {
 					
 				double table1EstimateCost = estimateCost(currTable);
 				double table2EstimateCost = estimateCost(Character.toString(table2));
-				System.out.println("currTable is " + currTable);
-				System.out.println("estimate is " + table1EstimateCost);
-				System.out.println("table2 is " + table2);
-				System.out.println("estimate is " + table2EstimateCost);
+				// System.out.println("currTable is " + currTable);
+				// System.out.println("estimate is " + table1EstimateCost);
+				// System.out.println("table2 is " + table2);
+				// System.out.println("estimate is " + table2EstimateCost);
 				int threshold = 30000;
 				if (table1EstimateCost >= threshold && table2EstimateCost >= threshold) {
 					switchTables = false;
@@ -1210,7 +1211,8 @@ public class Optimizer {
 					
 
 					// add second table
-					tableQueue.add(new Project(new Scan(secondTable + ".dat"), columnsToKeep));
+					//tableQueue.add(new Project(new Scan(secondTable + ".dat"), columnsToKeep));
+					tableQueue.add(new ProjectScan(secondTable + ".dat", columnsToKeep));
 
 					// need to update table 1 join col - table 2 join col is fine
 					// table1JoinCol = tableNameToStartingIndexMap.get(firstTable) + table1JoinCol;
@@ -1271,7 +1273,8 @@ public class Optimizer {
 					}
 
 					// add first table
-					tableQueue.add(new Project(new Scan(firstTable + ".dat"), columnsToKeep));
+					// tableQueue.add(new Project(new Scan(firstTable + ".dat"), columnsToKeep));
+					tableQueue.add(new ProjectScan(firstTable + ".dat", columnsToKeep));
 
 					// need to update table 2 join col - table 1 join col is fine
 					// table2JoinCol = tableNameToStartingIndexMap.get(secondTable) + table2JoinCol;

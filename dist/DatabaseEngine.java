@@ -26,7 +26,7 @@ public class DatabaseEngine {
 		Scanner scanner = new Scanner(System.in);
 		
 		// Get the CSV files
-		// String CSVFiles = loader.getCSVFiles(scanner);
+		String CSVFiles = loader.getCSVFiles(scanner);
 		// String CSVFiles = "../../data/xxxs/B.csv,../../data/xxxs/C.csv,../../data/xxxs/A.csv,../../data/xxxs/D.csv,../../data/xxxs/E.csv";
 		// String CSVFiles = "../../data/xxs/B.csv,../../data/xxs/C.csv,../../data/xxs/A.csv,../../data/xxs/D.csv,../../data/xxs/E.csv,../../data/xxs/F.csv";
 		// String CSVFiles = "../../data/xs/B.csv,../../data/xs/C.csv,../../data/xs/A.csv,../../data/xs/D.csv,../../data/xs/E.csv,../../data/xs/F.csv";
@@ -40,7 +40,7 @@ public class DatabaseEngine {
 		// CSVFiles += "../../data/l/G.csv,../../data/l/H.csv,../../data/l/I.csv,../../data/l/J.csv,../../data/l/K.csv,../../data/l/L.csv,";
 		// CSVFiles += "../../data/l/M.csv,../../data/l/N.csv,../../data/l/O.csv,../../data/l/P.csv,../../data/l/Q.csv";
 		// l2 dataset
-		String CSVFiles = "../../data/l2/B.csv,../../data/l2/C.csv,../../data/l2/A.csv,../../data/l2/D.csv,../../data/l2/E.csv,../../data/l2/F.csv";
+		// String CSVFiles = "../../data/l2/B.csv,../../data/l2/C.csv,../../data/l2/A.csv,../../data/l2/D.csv,../../data/l2/E.csv,../../data/l2/F.csv";
 		
 		long start = System.currentTimeMillis();
 		// Loader loads all the data into storage
@@ -230,7 +230,7 @@ public class DatabaseEngine {
 		//Scanner queryScanner = new Scanner(System.in);
 		
 		// scanner = new Scanner(new File("../../data/l2/queries.sql"));
-		scanner = new Scanner(new File("../../data/l2/queryTest.sql"));
+		// scanner = new Scanner(new File("../../data/l2/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
 
