@@ -62,7 +62,7 @@ public class ProjectScan extends RAOperation {
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
 				try {
-					while (rowsBuffer.size() < DatabaseEngine.mergejoinBufferSize) {
+					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
 						int[] oldRow = new int[this.numCols];
 						int[] newRow = new int[this.colsToKeep.length];
 						for (int i = 0; i < this.numCols; i++) {

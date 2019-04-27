@@ -1,24 +1,27 @@
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Scanner;
 
 
 public class DatabaseEngine {
 	
-	static final int equijoinBufferSize = 500000;
-	static final int mergejoinBufferSize = 500000;
+	static final int bufferSize = 3000000;
 	static int tempNumber = 0;
 
-	static HashMap<String, String> sortedColumnsMap = new HashMap<>();
+	// static HashMap<String, String> sortedColumnsMap = new HashMap<>();
 
 	// static int finalNumber = 0;
 
 	public static void main(String[] args) throws IOException {
 		// long totalStart = System.currentTimeMillis();
+
+		// Make Empty Scan
+		TableMetaData tmd = new TableMetaData("");
+		tmd.setRows(0);
+		Catalog.addData("Empty.dat", tmd);
+
+		File f = new File("Empty.dat");
+		f.createNewFile();
 		
 		// LOADER
 		Loader loader = new Loader();
@@ -229,7 +232,7 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		// scanner = new Scanner(new File("../../data/xxxs/queries.sql"));
+		// scanner = new Scanner(new File("../../data/l/queries.sql"));
 		// scanner = new Scanner(new File("../../data/l2/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
@@ -256,11 +259,11 @@ public class DatabaseEngine {
 			// Gets rid of all the data in the parser
 			parser.empty();
 
-			// start = System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 			// Execute Query
 			executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum(), optimizer.getswitchesQueue());
-			// stop = System.currentTimeMillis();
-			// System.err.println("Execution Time: " + (stop - start));
+			long stop = System.currentTimeMillis();
+			System.err.println("Execution Time: " + (stop - start));
 			// totalExecutionTime += (stop - start);
 
 			
@@ -270,11 +273,11 @@ public class DatabaseEngine {
 
 		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		
-		// start = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 		// Execute Query
 		executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum(), optimizer.getswitchesQueue());
-		// stop = System.currentTimeMillis();
-		// System.err.println("Execution Time: " + (stop - start));
+		long stop = System.currentTimeMillis();
+		System.err.println("Execution Time: " + (stop - start));
 		// totalExecutionTime += (stop - start);
 		
 		// long totalStop = System.currentTimeMillis();

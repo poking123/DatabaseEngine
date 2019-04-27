@@ -19,7 +19,11 @@ public class EquijoinWrite extends RAOperation {
 	
 	private EquijoinPredicate equijoinPredicate;
 
-	public EquijoinWrite(RAOperation source1, RAOperation source2, EquijoinPredicate equijoinPredicate, int tempNumber) {
+	private int[] colsToSum;
+	private long[] sums;
+	private boolean hasRows = false;
+
+	public EquijoinWrite(RAOperation source1, RAOperation source2, EquijoinPredicate equijoinPredicate, int tempNumber, int[] colsToSum) {
 		this.source1 = source1;
 		this.source2 = source2;
 
@@ -50,7 +54,9 @@ public class EquijoinWrite extends RAOperation {
 
         private HashMap<Integer, Queue<int[]>> bufferMap;
         
-        private DataOutputStream dos;
+		private DataOutputStream dos;
+		
+		
 		
 		public EquijoinWriteIterator(Iterator<Queue<int[]>> source1Iterator, Iterable<Queue<int[]>> source2, boolean isTwoTableJoin, int table1JoinCol, int table2JoinCol, int tempNumber) {
 			this.source1Iterator = source1Iterator;
@@ -64,29 +70,53 @@ public class EquijoinWrite extends RAOperation {
             this.numOfRows = 0;
             this.numOfCols = -1;
 
-            bufferMap = new HashMap<>();
+			bufferMap = new HashMap<>();
+			
 
-             try {
-                dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(this.tempNumber + ".dat"))); 
-             } catch (IOException e) {
-                System.out.println("EquijoinWrite - FileNotFound");
-             }
+			if (colsToSum == null) {
+				try {
+					dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(this.tempNumber + ".dat"))); 
+				} catch (IOException e) {
+					System.out.println("EquijoinWrite - FileNotFound");
+				}
+			} else {
+				sums = new long[colsToSum.length];
+			}
+            
             
 		}
 		
 		@Override
 		public boolean hasNext() {
             if (source1Iterator.hasNext() == false) {
-                try {
-                    dos.close();
-                } catch (IOException e) {
-                    System.out.println("EquijoinWrite - IOException");
-                }
-                TableMetaData tmd = new TableMetaData("");
-                tmd.setColumns(this.numOfCols);
-                tmd.setRows(this.numOfRows);
-                Catalog.addData(this.tempNumber + ".dat", tmd);
-                return false;
+				if (colsToSum == null) {
+					try {
+						dos.close();
+					} catch (IOException e) {
+						System.out.println("EquijoinWrite - IOException");
+					}
+					TableMetaData tmd = new TableMetaData("");
+					tmd.setColumns(this.numOfCols);
+					tmd.setRows(this.numOfRows);
+					Catalog.addData(this.tempNumber + ".dat", tmd);
+					return false;
+				} else {
+					StringBuilder sb = new StringBuilder();
+					if (hasRows) {
+						for (int i = 0; i < sums.length - 1; i++) {
+							sb.append(sums[i] + ",");
+						}
+						sb.append(sums[sums.length - 1]);
+					} else {
+						for (int i = 0; i < sums.length - 1; i++) {
+							sb.append(",");
+						}
+						// return "no results";
+					}
+					System.out.println(sb.toString());
+					return false;
+				}
+				
             }
 			return true;
 		}
@@ -131,15 +161,26 @@ public class EquijoinWrite extends RAOperation {
 								
 								while (!table1MatchingRows.isEmpty()) {
                                     int[] combinedRow = combineRows(table1MatchingRows.remove(), table2Row);
-                                    this.numOfCols = combinedRow.length;
-									for (int i = 0; i < combinedRow.length; i++) {
-                                        try {
-                                            dos.writeInt(combinedRow[i]);
-                                        } catch (IOException e) {
-                                            System.out.println("EquijoinWrite - IOException");
-                                        }
-                                    }
-                                    numOfRows++;
+									this.numOfCols = combinedRow.length;
+									
+									if (colsToSum == null) {
+										for (int i = 0; i < combinedRow.length; i++) {
+											try {
+												dos.writeInt(combinedRow[i]);
+											} catch (IOException e) {
+												System.out.println("EquijoinWrite - IOException");
+											}
+										}
+										numOfRows++;
+									} else {
+										hasRows = true;
+										for (int i = 0; i < colsToSum.length; i++) {
+											int keepIndex = colsToSum[i];
+											sums[i] += combinedRow[keepIndex];
+										}
+									}
+
+									
 								}
 							}
 							// else, there are no matches
@@ -151,14 +192,23 @@ public class EquijoinWrite extends RAOperation {
 				} else { // is one table join - we only scan table 1 because table 2's headers are already in table 1
 					for (int[] table1Row : input) {
 						if (equijoinPredicate.test(table1Row)) {
-                            for (int i = 0; i < table1Row.length; i++) {
-                                try {
-                                    dos.writeInt(table1Row[i]);
-                                } catch (IOException e) {
-                                    System.out.println("EquijoinWrite - IOException");
-                                }
-                                
-                            }
+							if (colsToSum == null) {
+								for (int i = 0; i < table1Row.length; i++) {
+									try {
+										dos.writeInt(table1Row[i]);
+									} catch (IOException e) {
+										System.out.println("EquijoinWrite - IOException");
+									}
+									
+								}
+							} else {
+								hasRows = true;
+								for (int i = 0; i < colsToSum.length; i++) {
+									int keepIndex = colsToSum[i];
+									sums[i] += table1Row[keepIndex];
+								}
+							}
+                            
 						}
 					}
 					return null;

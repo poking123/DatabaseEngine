@@ -129,7 +129,7 @@ public class GraceHashJoin extends RAOperation {
 				
             Queue<int[]> rowsToReturn = new LinkedList<>();
             
-            while (rowsToReturn.size() < DatabaseEngine.mergejoinBufferSize) {
+            while (rowsToReturn.size() < DatabaseEngine.bufferSize) {
                 String table1 = "";
                 String table2 = "";
 

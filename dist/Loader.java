@@ -30,7 +30,7 @@ public class Loader {
 	}
 
 	public void readCSVFile(String path) throws FileNotFoundException, IOException {
-		int tableNameIndex = path.lastIndexOf('\\') + 1;
+		int tableNameIndex = path.lastIndexOf('/') + 1;
 		// String tableName = path.substring(tableNameIndex, tableNameIndex + 1);
 		char tableName = path.charAt(tableNameIndex);
 
@@ -188,7 +188,7 @@ public class Loader {
 
 			// gets buffer of rows
 			Queue<int[]> tableRows = new LinkedList<>();
-			while (tableRows.size() < DatabaseEngine.mergejoinBufferSize && dis.available() != 0) {
+			while (tableRows.size() < DatabaseEngine.bufferSize && dis.available() != 0) {
 				int[] row = new int[numOfCols];
 				for (int i = 0; i < numOfCols; i++) {
 					row[i] = dis.readInt();

@@ -243,7 +243,7 @@ public class MergeJoin extends RAOperation {
 			
 
 			
-			while (rowsToReturn.size() < DatabaseEngine.mergejoinBufferSize) {
+			while (rowsToReturn.size() < DatabaseEngine.bufferSize) {
 				// System.out.println("Rows to return size is " + rowsToReturn.size());
 				// System.out.println("table1Done is " + table1Done);
 				// System.out.println("table2Done is " + table2Done);
@@ -568,7 +568,7 @@ public class MergeJoin extends RAOperation {
 
 				if (colsToSum == null) {
 					// checks to make sure rowsToReturn hasn't exceeded the bufferSize
-					if (rowsToReturn.size() > DatabaseEngine.mergejoinBufferSize) {
+					if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
 						return true;
 					}
 				}

@@ -1,12 +1,16 @@
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
 
 public class ExecutionEngine {
-	
-	public void executeQuery(Queue<Queue<RAOperation>> tablesQueue, Queue<Queue<Predicate>> predicatesQueue, Queue<Predicate> finalPredicateQueue, int[] columnsToSum, Queue<Queue<Boolean>> switchesQueue) throws FileNotFoundException {
+
+	public void executeQuery(Queue<Queue<RAOperation>> tablesQueue, Queue<Queue<Predicate>> predicatesQueue, Queue<Predicate> finalPredicateQueue, int[] columnsToSum, Queue<Queue<Boolean>> switchesQueue) throws IOException {
 		
 		Deque<RAOperation> finalDeque = new ArrayDeque<>();
 		
@@ -17,8 +21,9 @@ public class ExecutionEngine {
 			Queue<Predicate> predicateQueue = predicatesQueue.remove();
 			Queue<Boolean> switchQueue = switchesQueue.remove();
 
-			// System.err.println(tableQueue);
-			// System.err.println(predicateQueue);
+			System.err.println(tableQueue);
+			System.err.println(predicateQueue);
+			System.err.println(switchQueue);
 			
 			Deque<RAOperation> resultQueue = new ArrayDeque<>();
 			
@@ -54,13 +59,63 @@ public class ExecutionEngine {
 						if (predicateQueue.isEmpty()) { // last join
 							// Equijoin equijoin = new Equijoin(table1, table2, columnsToSum, ep); // dummy declaration
 							if (switchQueue.remove()) {
-								equijoin = new Equijoin(table2, table1, columnsToSum,  ep);
+								int tempNumber = DatabaseEngine.tempNumber;
+								DatabaseEngine.tempNumber++;
+								DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+								int numOfCols = -1;
+								int numOfRows = 0;
+
+								Iterator<Queue<int[]>> table1Itr = table1.iterator();
+								while (table1Itr.hasNext()) {
+									Queue<int[]> table1Rows = table1Itr.next();
+									while (!table1Rows.isEmpty()) {
+										int[] table1Row = table1Rows.remove();
+										numOfCols = table1Row.length;
+										for (int i = 0; i < table1Row.length; i++) {
+											dos.writeInt(table1Row[i]);
+										}
+										numOfRows++;
+									}
+								}
+								dos.close();
+
+								TableMetaData tmd = new TableMetaData("");
+								tmd.setColumns(numOfCols);
+								tmd.setRows(numOfRows);
+								Catalog.addData(tempNumber + ".dat", tmd);
+
+								equijoin = new Equijoin(table2, new Scan(tempNumber + ".dat", null), columnsToSum,  ep);
 							} else {
 								equijoin = new Equijoin(table1, table2, columnsToSum,  ep);
 							}
 						} else {
 							if (switchQueue.remove()) {
-								equijoin = new Equijoin(table2, table1, null, ep);
+								int tempNumber = DatabaseEngine.tempNumber;
+								DatabaseEngine.tempNumber++;
+								DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+								int numOfCols = -1;
+								int numOfRows = 0;
+
+								Iterator<Queue<int[]>> table1Itr = table1.iterator();
+								while (table1Itr.hasNext()) {
+									Queue<int[]> table1Rows = table1Itr.next();
+									while (!table1Rows.isEmpty()) {
+										int[] table1Row = table1Rows.remove();
+										numOfCols = table1Row.length;
+										for (int i = 0; i < table1Row.length; i++) {
+											dos.writeInt(table1Row[i]);
+										}
+										numOfRows++;
+									}
+								}
+								dos.close();
+
+								TableMetaData tmd = new TableMetaData("");
+								tmd.setColumns(numOfCols);
+								tmd.setRows(numOfRows);
+								Catalog.addData(tempNumber + ".dat", tmd);
+
+								equijoin = new Equijoin(table2, new Scan(tempNumber + ".dat", null), null, ep);
 							} else {
 								equijoin = new Equijoin(table1, table2, null, ep);
 							}
@@ -127,23 +182,34 @@ public class ExecutionEngine {
 						int tempNumber = DatabaseEngine.tempNumber;
 						DatabaseEngine.tempNumber++;
 
-						EquijoinWrite equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber); // dummy declaration
-						if (switchQueue.remove()) {
-							equijoinWrite = new EquijoinWrite(EJWritetable2, EJWritetable1, ep4, tempNumber);
+						EquijoinWrite equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber, null); // dummy declaration
+						if (predicateQueue.isEmpty()) {
+							if (switchQueue.remove()) {
+								equijoinWrite = new EquijoinWrite(EJWritetable2, EJWritetable1, ep4, tempNumber, columnsToSum);
+							} else {
+								equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber, columnsToSum);
+							}
+							resultQueue.add(equijoinWrite);
 						} else {
-							equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber);
+							if (switchQueue.remove()) {
+								equijoinWrite = new EquijoinWrite(EJWritetable2, EJWritetable1, ep4, tempNumber, null);
+							} else {
+								equijoinWrite = new EquijoinWrite(EJWritetable1, EJWritetable2, ep4, tempNumber, null);
+							}
+	
+							Iterator<Queue<int[]>> equijoinWriteItr = equijoinWrite.iterator();
+							while (equijoinWriteItr.hasNext()) { // write the new file to disk
+								equijoinWriteItr.next();
+							}
+	
+							try {
+								resultQueue.add(new Scan(tempNumber + ".dat", null)); // adds result to result queue
+							} catch (FileNotFoundException e) {
+								System.out.println("ExecutionEngine - equjoinWrite - FileNotFoundException");
+							}
 						}
 
-						Iterator<Queue<int[]>> equijoinWriteItr = equijoinWrite.iterator();
-						while (equijoinWriteItr.hasNext()) { // write the new file to disk
-							equijoinWriteItr.next();
-						}
-
-						try {
-							resultQueue.add(new Scan(tempNumber + ".dat")); // adds result to result queue
-						} catch (FileNotFoundException e) {
-							System.out.println("ExecutionEngine - equjoinWrite - FileNotFoundException");
-						}
+						
 						
 						break;
 				}

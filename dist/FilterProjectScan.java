@@ -63,8 +63,11 @@ public class FilterProjectScan extends RAOperation {
 			@Override
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
+				System.err.println("Starting filter");
+				long start = System.currentTimeMillis();
 				try {
-					while (rowsBuffer.size() < DatabaseEngine.mergejoinBufferSize) {
+					
+					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
 						int[] oldRow = new int[this.numCols];
 						int[] newRow = new int[this.colsToKeep.length];
 						for (int i = 0; i < this.numCols; i++) {
@@ -84,6 +87,9 @@ public class FilterProjectScan extends RAOperation {
 				} catch (IOException e) { // Done reading the table
 					
 				}
+				long stop = System.currentTimeMillis();
+				System.err.println("Filter time: " + (stop - start));
+				System.err.println("filter returned");
 				return rowsBuffer;
 			}
 			

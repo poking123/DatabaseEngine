@@ -11,10 +11,16 @@ public class Scan extends RAOperation {
 
 	private Queue<ArrayList<int[]>> list = new LinkedList<>();
 	private String tableName;
+	private long[] sums;
+	private int[] colsToSum;
 	
 	
-	public Scan(String tableName) throws FileNotFoundException {
+	public Scan(String tableName, int[] colsToSum) throws FileNotFoundException {
 		this.tableName = tableName;
+		this.colsToSum = colsToSum;
+		if (this.colsToSum != null) {
+			sums = new long[this.colsToSum.length];
+		}
 	}
 
 	public String toString() {
@@ -51,6 +57,14 @@ public class Scan extends RAOperation {
 				if (this.rowsRemaining > 0)
 					return true;
 				
+				if (colsToSum != null) {
+					StringBuilder sb = new StringBuilder();
+					for (int i = 0; i < sums.length - 1; i++) {
+						sb.append(",");
+					}
+					System.out.println(sb.toString());
+				}
+
 				return false;
 			}
 	
@@ -58,7 +72,7 @@ public class Scan extends RAOperation {
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
 				try {
-					while (rowsBuffer.size() < DatabaseEngine.mergejoinBufferSize) {
+					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
 						int[] row = new int[numCols];
 						for (int i = 0; i < numCols; i++) {
 							row[i] = dis.readInt();

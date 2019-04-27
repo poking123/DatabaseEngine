@@ -81,14 +81,14 @@ public class Filter extends RAOperation {
 			Queue<int[]> rowsToReturn = new LinkedList<>();
 			while (sourceIterator.hasNext()) {
 				Queue<int[]> input = sourceIterator.next();
-
+				// System.out.println("filter read");
 				while (!input.isEmpty()) {
 					int[] row = input.remove();
 					if (predicate.test(row)) {
 						rowsToReturn.add(row);
 					}
 				}
-				if (rowsToReturn.size() > DatabaseEngine.mergejoinBufferSize) {
+				if (rowsToReturn.size() > DatabaseEngine.bufferSize) {
 					break;
 				}
 

@@ -1000,7 +1000,30 @@ public class Optimizer {
 			// 	bestOrder = bestOrder.charAt(1) + "" + bestOrder.charAt(0) + bestOrder.substring(2);
 			// }
 
-			// System.err.println("Best Order is " + bestOrder); 
+			// checks the predicate to see if they will return any results
+			for (char c : tablePredicateMap.keySet()) {
+				ArrayList<int[]> predDataList = tablePredicateMap.get(c);
+				for (int[] predData : predDataList) {
+					int column = predData[3];
+					int operator = predData[1];
+					int compareValue = predData[2];
+					if (operator == 0) { // only checks equals
+						int min = Catalog.getMin(c + ".dat", column);
+						int max = Catalog.getMax(c + ".dat", column);
+						if (compareValue < min || compareValue > max) {
+							this.columnsToSum = new int[columnNamesArr.length];
+							tableQueue.add(new Scan("Empty.dat", this.columnsToSum));
+							predicateQueue.add(new PlacePredicate());
+							tablesQueue.add(tableQueue);
+							predicatesQueue.add(predicateQueue);
+							switchesQueue.add(switchQueue);
+							return;
+						}
+					}
+				}
+			}
+
+			System.err.println("Best Order is " + bestOrder); 
 			char table1 = bestOrder.charAt(0);
 
 			// columns to keep
@@ -1084,20 +1107,43 @@ public class Optimizer {
 				// System.out.println("table2 is " + table2);
 				// System.out.println("estimate is " + table2EstimateCost);
 				int threshold = 30000;
-				if (table1EstimateCost >= threshold && table2EstimateCost >= threshold) {
-					switchTables = false;
-					doMergeJoin = true;
-				} else if (table1EstimateCost >= threshold && table2EstimateCost < 2000) {
-					switchTables = true;
-					doMergeJoin = false;
+				// OLD ORIGINAL
+				// if (table1EstimateCost >= threshold && table2EstimateCost >= threshold) {
+				// 	switchTables = false;
+				// 	doMergeJoin = true;
+				// } else if (table1EstimateCost >= threshold && table2EstimateCost < 2000) {
+				// 	switchTables = true;
+				// 	doMergeJoin = false;
+				// } else {
+				// 	if (table2EstimateCost < table1EstimateCost) {
+				// 		switchTables = true;
+				// 	} else {
+				// 		switchTables = false;
+				// 	}
+				// 	doMergeJoin = false;
+				// }
+
+				// BETTER?
+				if (table1EstimateCost >= threshold) {
+					if (table2EstimateCost < 20000) {
+						switchTables = true;
+						doMergeJoin = false;
+					} else {
+						switchTables = false;
+						doMergeJoin = true;
+					}
 				} else {
-					switchTables = false;
+					if (table2EstimateCost < table1EstimateCost) {
+						switchTables = true;
+					} else {
+						switchTables = false;
+					}
 					doMergeJoin = false;
 				}
 
 				// testing ----------------------
 				// switchTables = false;
-				// doMergeJoin = true;
+				// doMergeJoin = false;
 
 				
 				columnsToKeepSet = new TreeSet<>(tableToColumnsToKeep.get(Character.toUpperCase(table2)));
@@ -1178,7 +1224,7 @@ public class Optimizer {
 
 				if (containsFirstTable && containsSecondTable) { // one table equijoin
 					// add fake table
-					tableQueue.add(new Scan("Fake Table"));
+					tableQueue.add(new Scan("Fake Table", null));
 
 					switchQueue.add(false);
 
@@ -1233,7 +1279,7 @@ public class Optimizer {
 
 					if (switchTables) {
 						switchQueue.add(true);
-						predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true, "equijoinWritePredicate"));
+						predicateQueue.add(new EquijoinPredicate(table2JoinCol, table1JoinCol, true));
 					} else {
 						switchQueue.add(false);
 						if (doMergeJoin) {
@@ -1304,7 +1350,7 @@ public class Optimizer {
 
 					if (switchTables) {
 						switchQueue.add(true);
-						predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true, "equijoinWritePredicate"));
+						predicateQueue.add(new EquijoinPredicate(table1JoinCol, table2JoinCol, true));
 					} else {
 						switchQueue.add(false);
 						if (doMergeJoin) {
@@ -1357,7 +1403,7 @@ public class Optimizer {
 						switchQueue.add(false);
 
 						// make 1 table equijoin
-						tableQueue.add(new Scan("Fake Table"));
+						tableQueue.add(new Scan("Fake Table", null));
 						predicateQueue.add(new EquijoinPredicate(table1JoinColTemp, table2JoinColTemp, false));
 						whereTablesItr.remove();
 					}
