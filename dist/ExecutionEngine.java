@@ -21,9 +21,9 @@ public class ExecutionEngine {
 			Queue<Predicate> predicateQueue = predicatesQueue.remove();
 			Queue<Boolean> switchQueue = switchesQueue.remove();
 
-			System.err.println(tableQueue);
-			System.err.println(predicateQueue);
-			System.err.println(switchQueue);
+			// System.err.println(tableQueue);
+			// System.err.println(predicateQueue);
+			// System.err.println(switchQueue);
 			
 			Deque<RAOperation> resultQueue = new ArrayDeque<>();
 			
@@ -96,6 +96,7 @@ public class ExecutionEngine {
 								int numOfCols = -1;
 								int numOfRows = 0;
 
+								// Go through table 1 and write the result to disk
 								Iterator<Queue<int[]>> table1Itr = table1.iterator();
 								while (table1Itr.hasNext()) {
 									Queue<int[]> table1Rows = table1Itr.next();
@@ -120,7 +121,6 @@ public class ExecutionEngine {
 								equijoin = new Equijoin(table1, table2, null, ep);
 							}
 						}
-
 						
 
 						// Equijoin equijoin = new Equijoin(table1, table2, ep);

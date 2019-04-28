@@ -1,7 +1,6 @@
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -9,7 +8,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 
 public class MergeJoin extends RAOperation {
@@ -141,9 +139,17 @@ public class MergeJoin extends RAOperation {
 					this.noRows = false;
 					// adds the first row for each table and declares the join column value
 					int[] dis1Row = new int[this.table1Cols];
-					for (int i = 0; i < dis1Row.length; i++) {
-						dis1Row[i] = dis1.readInt();
+					
+					byte[] buffer = new byte[4 * this.table1Cols];
+
+					dis1.read(buffer, 0, 4 * this.table1Cols);
+					for (int i = 0; i < this.table1Cols; i++) {
+						byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+						int value = byteArrayToInt(newByteArr);
+						dis1Row[i] = value;
 					}
+
+
 					dis1Value = dis1Row[this.table1JoinCol];
 					dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
 					dis1Row = null;
@@ -154,9 +160,15 @@ public class MergeJoin extends RAOperation {
 					}
 					
 					int[] dis2Row = new int[this.table2Cols];
-					for (int i = 0; i < dis2Row.length; i++) {
-						dis2Row[i] = dis2.readInt();
+					buffer = new byte[4 * this.table2Cols];
+
+					dis2.read(buffer, 0, 4 * this.table2Cols);
+					for (int i = 0; i < this.table2Cols; i++) {
+						byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+						int value = byteArrayToInt(newByteArr);
+						dis2Row[i] = value;
 					}
+
 					dis2Value = dis2Row[this.table2JoinCol];
 					dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
 					dis2Row = null;
@@ -173,6 +185,15 @@ public class MergeJoin extends RAOperation {
 			
 			this.hasCombinationsLeft = false;
 			
+		}
+
+		public int byteArrayToInt(byte[] b) {
+			int value = 0;
+			for (int i = 0; i < 4; i++) {
+				int shift = (4 - 1 - i) * 8;
+				value += (b[i] & 0x000000FF) << shift;
+			}
+			return value;
 		}
 
 		public void print(int[] arr) {
@@ -259,8 +280,13 @@ public class MergeJoin extends RAOperation {
 							while (!table1Done && dis1Value < dis2Value) {
 								this.dis1Queue.clear();
 								int[] dis1Row = new int[this.table1Cols];
+								byte[] buffer = new byte[4 * this.table1Cols];
+
+								dis1.read(buffer, 0, 4 * this.table1Cols);
 								for (int i = 0; i < this.table1Cols; i++) {
-									dis1Row[i] = dis1.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis1Row[i] = value;
 								}
 								if (dis1.available() == 0) table1Done = true;
 								// new dis1Value
@@ -272,8 +298,13 @@ public class MergeJoin extends RAOperation {
 							while (!table2Done && dis2Value < dis1Value) {
 								this.dis2Queue.clear();
 								int[] dis2Row = new int[this.table2Cols];
+								byte[] buffer = new byte[4 * this.table2Cols];
+
+								dis2.read(buffer, 0, 4 * this.table2Cols);
 								for (int i = 0; i < this.table2Cols; i++) {
-									dis2Row[i] = dis2.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis2Row[i] = value;
 								}
 								if (dis2.available() == 0) table2Done = true;
 								// new dis2Value
@@ -289,9 +320,15 @@ public class MergeJoin extends RAOperation {
 							while (!table1Done && dis1Value < dis2Value) {
 								this.dis1Queue.clear();
 								int[] dis1Row = new int[this.table1Cols];
+								byte[] buffer = new byte[4 * this.table1Cols];
+
+								dis1.read(buffer, 0, 4 * this.table1Cols);
 								for (int i = 0; i < this.table1Cols; i++) {
-									dis1Row[i] = dis1.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis1Row[i] = value;
 								}
+
 								if (dis1.available() == 0) table1Done = true;
 								// new dis1Value
 								dis1Value = dis1Row[this.table1JoinCol];
@@ -313,9 +350,15 @@ public class MergeJoin extends RAOperation {
 						// we need a value to compare it first
 						int[] dis1Row = new int[this.table1Cols];
 						if (!table1Done) {
+							byte[] buffer = new byte[4 * this.table1Cols];
+
+							dis1.read(buffer, 0, 4 * this.table1Cols);
 							for (int i = 0; i < this.table1Cols; i++) {
-								dis1Row[i] = dis1.readInt();
+								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								int value = byteArrayToInt(newByteArr);
+								dis1Row[i] = value;
 							}
+
 							if (dis1.available() == 0) {
 								table1Done = true;
 							}
@@ -330,9 +373,15 @@ public class MergeJoin extends RAOperation {
 							dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
 							// System.out.println("dis1Queue size is " + dis1Queue.size());
 							if (!table1Done) {
+								byte[] buffer = new byte[4 * this.table1Cols];
+
+								dis1.read(buffer, 0, 4 * this.table1Cols);
 								for (int i = 0; i < this.table1Cols; i++) {
-									dis1Row[i] = dis1.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis1Row[i] = value;
 								}
+
 								if (dis1.available() == 0) {
 									table1Done = true;
 								}
@@ -354,9 +403,15 @@ public class MergeJoin extends RAOperation {
 						// we need a value to compare it first
 						int[] dis2Row = new int[this.table2Cols];
 						if (!table2Done) {
+							byte[] buffer = new byte[4 * this.table2Cols];
+
+							dis2.read(buffer, 0, 4 * this.table2Cols);
 							for (int i = 0; i < this.table2Cols; i++) {
-								dis2Row[i] = dis2.readInt();
+								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								int value = byteArrayToInt(newByteArr);
+								dis2Row[i] = value;
 							}
+
 							if (dis2.available() == 0) {
 								table2Done = true;
 							}
@@ -368,9 +423,15 @@ public class MergeJoin extends RAOperation {
 						while (dis2Row[this.table2JoinCol] == dis2Value) {
 							dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
 							if (!table2Done) {
+								byte[] buffer = new byte[4 * this.table2Cols];
+
+								dis2.read(buffer, 0, 4 * this.table2Cols);
 								for (int i = 0; i < this.table2Cols; i++) {
-									dis2Row[i] = dis2.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis2Row[i] = value;
 								}
+
 								if (dis2.available() == 0) {
 									table2Done = true;
 								}
@@ -438,9 +499,15 @@ public class MergeJoin extends RAOperation {
 							while (!table1Done && dis1Value < dis2Value) {
 								this.dis1Queue.clear();
 								int[] dis1Row = new int[this.table1Cols];
+								byte[] buffer = new byte[4 * this.table1Cols];
+
+								dis1.read(buffer, 0, 4 * this.table1Cols);
 								for (int i = 0; i < this.table1Cols; i++) {
-									dis1Row[i] = dis1.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis1Row[i] = value;
 								}
+
 								if (dis1.available() == 0) table1Done = true;
 								// new dis1Value
 								dis1Value = dis1Row[this.table1JoinCol];
@@ -453,8 +520,13 @@ public class MergeJoin extends RAOperation {
 								while (dis1Row[this.table1JoinCol] == dis1Value) {
 									dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
 									if (!table1Done) {
+										byte[] buffer = new byte[4 * this.table1Cols];
+
+										dis1.read(buffer, 0, 4 * this.table1Cols);
 										for (int i = 0; i < this.table1Cols; i++) {
-											dis1Row[i] = dis1.readInt();
+											byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+											int value = byteArrayToInt(newByteArr);
+											dis1Row[i] = value;
 										}
 										if (dis1.available() == 0) {
 											table1Done = true;
@@ -476,9 +548,15 @@ public class MergeJoin extends RAOperation {
 							while (!table2Done && dis2Value < dis1Value) {
 								this.dis2Queue.clear();
 								int[] dis2Row = new int[this.table2Cols];
+								byte[] buffer = new byte[4 * this.table2Cols];
+
+								dis2.read(buffer, 0, 4 * this.table2Cols);
 								for (int i = 0; i < this.table2Cols; i++) {
-									dis2Row[i] = dis2.readInt();
+									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+									int value = byteArrayToInt(newByteArr);
+									dis2Row[i] = value;
 								}
+
 								if (dis2.available() == 0) table2Done = true;
 								// new dis2Value
 								dis2Value = dis2Row[this.table2JoinCol];
@@ -492,9 +570,15 @@ public class MergeJoin extends RAOperation {
 								while (dis2Row[this.table2JoinCol] == dis2Value) {
 									dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
 									if (!table2Done) {
+										byte[] buffer = new byte[4 * this.table2Cols];
+
+										dis2.read(buffer, 0, 4 * this.table2Cols);
 										for (int i = 0; i < this.table2Cols; i++) {
-											dis2Row[i] = dis2.readInt();
+											byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+											int value = byteArrayToInt(newByteArr);
+											dis2Row[i] = value;
 										}
+										
 										if (dis2.available() == 0) {
 											table2Done = true;
 										}

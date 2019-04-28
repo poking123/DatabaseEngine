@@ -2,7 +2,9 @@
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -57,30 +59,52 @@ public class ProjectScan extends RAOperation {
 				
 				return false;
 			}
+
+			public int fromByteArray(byte[] bytes) {
+				return ByteBuffer.wrap(bytes).getInt();
+		   }
+
+		   public int byteArrayToInt(byte[] b) {
+				return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8 | (b[3] & 0xff);
+		   }
 	
 			@Override
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
+				int rowBufferSize = DatabaseEngine.scanBufferSize;
+				long start = System.currentTimeMillis();
 				try {
-					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
-						int[] oldRow = new int[this.numCols];
-						int[] newRow = new int[this.colsToKeep.length];
-						for (int i = 0; i < this.numCols; i++) {
-							oldRow[i] = dis.readInt();
-							// System.out.print(row[i] + " ");
+					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
+
+						byte[] buffer = new byte[4 * numCols * rowBufferSize];
+
+						int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
+
+						for (int j = 0; j < bytesRead / 4; j += this.numCols) {
+							int[] oldRow = new int[numCols];
+							for (int i = 0; i < numCols; i++) {
+								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
+								int value = byteArrayToInt(newByteArr);
+								oldRow[i] = value;
+							}
+
+							int[] newRow = new int[this.colsToKeep.length];
+							
+							for (int i = 0; i < this.colsToKeep.length; i++) {
+								newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
+							}
+							rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+							rowsRemaining--;
 						}
-                        // System.out.println();
-                        
-                        for (int i = 0; i < this.colsToKeep.length; i++) {
-                            newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
-                        }
-						rowsBuffer.add(newRow);
-						rowsRemaining--;
+
+						
 					}
 					
 				} catch (IOException e) { // Done reading the table
 					
 				}
+				long stop = System.currentTimeMillis();
+				System.err.println("ProjectScan time " + (stop - start));
 				return rowsBuffer;
 			}
 			

@@ -1,5 +1,5 @@
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
+import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 
 public class Loader {
@@ -155,16 +156,54 @@ public class Loader {
 		// for debugging, to read the data
 		// String fileNameToRead = DatabaseEngine.sortedColumnsMap.get(tableName + "" + tableJoinCol + ".dat");
 
-		
-		// DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(fileNameToRead))); 
+		// int rowBufferSize = 2;
+		// DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat"))); 
 		// while (dis.available() != 0) {
-		// 	for (int i = 0; i < numOfCols; i++) {
-		// 		System.out.print(dis.readInt() + " ");
+		// 	byte[] buffer = new byte[1024 * 4];
+
+		// 	int bytesRead = dis.read(buffer, 0, 4 * numOfCols * rowBufferSize);
+
+
+		// 	for (int j = 0; j < bytesRead / 4; j += numOfCols) {
+
+		// 		int[] row = new int[numOfCols];
+		// 		for (int i = 0; i < numOfCols; i++) {
+		// 			byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + 4 * j, 4 * i + 4 + 4 * j);
+		// 			int value = fromByteArray(newByteArr);
+		// 			row[i] = value;
+		// 		}
+
+		// 		print(row);
 		// 	}
+		// }
+		// System.exit(0);
+		// for (int i = 0; i < 2; i++) {
+			
+		// 	byte[] buffer = new byte[4];
+
+		// 	dis.read(buffer, 0, 4);
+		// 	System.out.println(buffer[0]);
+		// 	System.out.println(buffer[1]);
+		// 	System.out.println(buffer[2]);
+		// 	System.out.println(buffer[3]);
+
 		// 	System.out.println();
+		// 	System.out.println(byteArrayToInt(buffer));
 		// }
 
+		// System.out.println(bytesToInt((byte) 0, (byte) 0, (byte) 8, (byte) 128));
+
 	}
+
+	public void print(int[] arr) {
+		for (int i : arr)
+			System.out.print(i + " ");
+		System.out.println();
+	}
+
+	public int fromByteArray(byte[] bytes) {
+		return ByteBuffer.wrap(bytes).getInt();
+   }
 	
 	// returns the String of CSV files
 	public String getCSVFiles(Scanner scanner) {

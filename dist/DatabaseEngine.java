@@ -5,8 +5,9 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 3000000;
+	static final int bufferSize = 500000;
 	static int tempNumber = 0;
+	static final int scanBufferSize = 1024;
 
 	// static HashMap<String, String> sortedColumnsMap = new HashMap<>();
 
@@ -232,8 +233,8 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		// scanner = new Scanner(new File("../../data/l/queries.sql"));
-		// scanner = new Scanner(new File("../../data/l2/queryTest.sql"));
+		// scanner = new Scanner(new File("../../data/m/queries.sql"));
+		// scanner = new Scanner(new File("../../data/xxs/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);
 

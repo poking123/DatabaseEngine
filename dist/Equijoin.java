@@ -97,7 +97,7 @@ public class Equijoin extends RAOperation {
 		
 		@Override
 		public boolean hasNext() {
-			System.err.println("has next equijoin called");
+			// System.err.println("has next equijoin called");
 			this.varHasNext = source1Iterator.hasNext();
 			boolean rowBlock = (this.table2RowBlock == null) ? false : !this.table2RowBlock.isEmpty();
 			this.rowBlocks = (this.table2RowBlocks == null) ? false : this.table2RowBlocks.hasNext();
@@ -117,6 +117,7 @@ public class Equijoin extends RAOperation {
 					}
 					// return "no results";
 				}
+				// System.err.println("number of rows " + DatabaseEngine.finalNumber);
 				System.out.println(sb.toString());
 				return false;
 			} else {
@@ -136,6 +137,7 @@ public class Equijoin extends RAOperation {
 
 					if (this.table2RowBlocks != null) {
 						// finish the rest of the matching rows
+						// System.out.println("entered table2rowblock not null");
 						if (this.table1MatchingRows.size() > 0) {
 							while (!this.table1MatchingRows.isEmpty()) {
 								rowsToReturn.add(combineRows(this.table1MatchingRows.remove(), this.table2Row));
@@ -169,6 +171,7 @@ public class Equijoin extends RAOperation {
 						// while (!bufferMap.isEmpty() && table2RowBlocks.hasNext()) {
 						while (!bufferMap.isEmpty() && this.rowBlocks) {
 							table2RowBlock = table2RowBlocks.next();
+							this.rowBlocks = table2RowBlocks.hasNext();
 							while (!table2RowBlock.isEmpty()) {
 								this.table2Row = table2RowBlock.remove();
 								int value = table2Row[this.table2JoinCol];
@@ -270,6 +273,7 @@ public class Equijoin extends RAOperation {
 						// just have to loop through table 2
 						table2RowBlocks = source2.iterator();
 						while (table2RowBlocks.hasNext()) {
+							// System.out.println("in table2 block has next while loop");
 							table2RowBlock = table2RowBlocks.next();
 							while (!table2RowBlock.isEmpty()) {
 								this.table2Row = table2RowBlock.remove();
@@ -385,7 +389,7 @@ public class Equijoin extends RAOperation {
 										int keepIndex = this.colsToSum[i];
 										this.sums[i] += newRow[keepIndex];
 									}
-									
+									// DatabaseEngine.finalNumber++;
 									// int[] table1MatchingRow = table1MatchingRows.remove();
 									// rowsToReturn.add(combineRows(table1MatchingRows.remove(), table2Row));
 

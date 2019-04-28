@@ -1023,7 +1023,7 @@ public class Optimizer {
 				}
 			}
 
-			System.err.println("Best Order is " + bestOrder); 
+			// System.err.println("Best Order is " + bestOrder); 
 			char table1 = bestOrder.charAt(0);
 
 			// columns to keep
@@ -1143,7 +1143,7 @@ public class Optimizer {
 
 				// testing ----------------------
 				// switchTables = false;
-				// doMergeJoin = false;
+				// doMergeJoin = true;
 
 				
 				columnsToKeepSet = new TreeSet<>(tableToColumnsToKeep.get(Character.toUpperCase(table2)));

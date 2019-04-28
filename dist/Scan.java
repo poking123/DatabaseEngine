@@ -2,7 +2,9 @@
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -67,25 +69,46 @@ public class Scan extends RAOperation {
 
 				return false;
 			}
+
+			public int fromByteArray(byte[] bytes) {
+				return ByteBuffer.wrap(bytes).getInt();
+		   }
+
+		   public int byteArrayToInt(byte[] b) {
+			  	return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8 | (b[3] & 0xff);
+		   }
 	
 			@Override
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
+				int rowBufferSize = DatabaseEngine.scanBufferSize;
+				long start = System.currentTimeMillis();
+
 				try {
-					while (rowsBuffer.size() < DatabaseEngine.bufferSize) {
-						int[] row = new int[numCols];
-						for (int i = 0; i < numCols; i++) {
-							row[i] = dis.readInt();
-							// System.out.print(row[i] + " ");
+					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
+
+						byte[] buffer = new byte[4 * numCols * rowBufferSize];
+
+						int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
+						for (int j = 0; j < bytesRead / 4; j += this.numCols) {
+							int[] row = new int[numCols];
+							for (int i = 0; i < numCols; i++) {
+								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
+								int value = byteArrayToInt(newByteArr);
+								row[i] = value;
+							}
+
+							rowsBuffer.add(Arrays.copyOf(row, row.length));
+							rowsRemaining--;
 						}
-						// System.out.println();
-						rowsBuffer.add(row);
-						rowsRemaining--;
+						
 					}
 					
 				} catch (IOException e) { // Done reading the table
 					
 				}
+				long stop = System.currentTimeMillis();
+				System.err.println("Scan time " + (stop - start));
 				return rowsBuffer;
 			}
 			
