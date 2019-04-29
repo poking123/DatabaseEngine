@@ -143,6 +143,14 @@ public class Scan extends RAOperation {
 				}
 				long stop = System.currentTimeMillis();
 				System.err.println("Scan time " + (stop - start));
+				if (this.rowsRemaining == 0) {
+					try {
+						dis.close();
+					} catch (IOException e) {
+					
+					}
+				}
+				
 				return rowsBuffer;
 			}
 			

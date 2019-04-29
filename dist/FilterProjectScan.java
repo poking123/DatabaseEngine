@@ -173,6 +173,13 @@ public class FilterProjectScan extends RAOperation {
 				// System.err.println("filter returned222");
 				// System.err.println("rowsBuffer size is " + rowsBuffer.size());
 				// System.err.println("rowsRemaining is " + this.rowsRemaining);
+				if (this.rowsRemaining == 0) {
+					try {
+						dis.close();
+					} catch (IOException e) {
+					
+					}
+				}
 				return rowsBuffer;
 			}
 			

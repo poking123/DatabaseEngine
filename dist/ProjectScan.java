@@ -149,6 +149,13 @@ public class ProjectScan extends RAOperation {
 				}
 				long stop = System.currentTimeMillis();
 				System.err.println("ProjectScan time " + (stop - start));
+				if (this.rowsRemaining == 0) {
+					try {
+						dis.close();
+					} catch (IOException e) {
+					
+					}
+				}
 				return rowsBuffer;
 			}
 			
