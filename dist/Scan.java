@@ -47,11 +47,14 @@ public class Scan extends RAOperation {
 			private final DataInputStream dis;
 			private final int numCols;
 			private int rowsRemaining;
+			private ByteBuffer bb;
 			
 			public ScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName) throws FileNotFoundException {
 				this.dis = Catalog.openStream(tableName);
 				this.numCols = Catalog.getColumns(tableName);
 				this.rowsRemaining = Catalog.getRows(tableName);
+				this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
+				this.bb.flip();
 			}
 			
 			@Override
@@ -81,26 +84,57 @@ public class Scan extends RAOperation {
 			@Override
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
-				int rowBufferSize = DatabaseEngine.scanBufferSize;
+				// int rowBufferSize = DatabaseEngine.scanBufferSize;
 				long start = System.currentTimeMillis();
 
 				try {
 					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
 
-						byte[] buffer = new byte[4 * numCols * rowBufferSize];
+						int index = 0;
 
-						int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
-						for (int j = 0; j < bytesRead / 4; j += this.numCols) {
-							int[] row = new int[numCols];
-							for (int i = 0; i < numCols; i++) {
-								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
-								int value = byteArrayToInt(newByteArr);
-								row[i] = value;
+						int[] oldRow = new int[this.numCols];
+						while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
+							int value = bb.getInt();
+							oldRow[index] = value;
+							index = (index + 1) % this.numCols;
+							if (index == 0) {
+								rowsBuffer.add(Arrays.copyOf(oldRow, oldRow.length));
+								rowsRemaining--;
 							}
+						}
 
-							rowsBuffer.add(Arrays.copyOf(row, row.length));
+
+						boolean finishRow = (index != 0);
+
+						byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
+						dis.read(buffer);
+						bb = ByteBuffer.wrap(buffer);
+
+						if (finishRow) {
+							while (index < this.numCols) {
+								oldRow[index] = bb.getInt();
+								index++;
+							}
+							rowsBuffer.add(Arrays.copyOf(oldRow, oldRow.length));
 							rowsRemaining--;
 						}
+
+
+
+						// byte[] buffer = new byte[4 * numCols * rowBufferSize];
+
+						// int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
+						// for (int j = 0; j < bytesRead / 4; j += this.numCols) {
+						// 	int[] row = new int[numCols];
+						// 	for (int i = 0; i < numCols; i++) {
+						// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
+						// 		int value = byteArrayToInt(newByteArr);
+						// 		row[i] = value;
+						// 	}
+
+						// 	rowsBuffer.add(Arrays.copyOf(row, row.length));
+						// 	rowsRemaining--;
+						// }
 						
 					}
 					

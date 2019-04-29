@@ -1,0 +1,29 @@
+while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0)
+	int index = 0
+	while (ByteBuffer.hasRemaining())
+		int[] oldRow = new int[numCols];
+		while (index < newRow.length && !ByteBuffer.hasRemaining())
+			newRow[index] = ByteBuffer.getInt()
+			index = (index + 1) % numCols
+			if (index == 0) 
+				int[] newRow = new int[colsToKeep.length]
+				for (int i = 0; i < colsToKeep.length; i++)
+					newRow[i] = oldRow[colsToKeep[i]]
+
+				if (predicate.test(newRow))
+					rowsBuffer.add(Arrays.copyOf(newRow, newRow.length))
+
+				rowsRemaining--
+
+	boolean finishRow = (index != 0)
+
+	byte[] buffer = new byte[4 * 1024];
+	int bytesRead = dis.read(buffer)
+	ByteBuffer.put(buffer)
+
+	
+	if (finishRow)
+		while (index < numCols)
+			newRow[index] = ByteBuffer.getInt()
+			index++
+		rowsRemaining--

@@ -14,7 +14,8 @@ public class FilterProjectScan extends RAOperation {
 	private Queue<ArrayList<int[]>> list = new LinkedList<>();
     private String tableName;
     private int[] colsToKeep;
-    private FilterPredicate predicate;
+	private FilterPredicate predicate;
+	
 	
 	
 	public FilterProjectScan(FilterPredicate p) throws FileNotFoundException {
@@ -45,13 +46,16 @@ public class FilterProjectScan extends RAOperation {
 			private final DataInputStream dis;
 			private final int numCols;
             private int rowsRemaining;
-            private int[] colsToKeep;
+			private int[] colsToKeep;
+			private ByteBuffer bb;
 			
 			public FilterProjectScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName, int[] colsToKeep) throws FileNotFoundException {
 				this.dis = Catalog.openStream(tableName);
 				this.numCols = Catalog.getColumns(tableName);
                 this.rowsRemaining = Catalog.getRows(tableName);
-                this.colsToKeep = colsToKeep;
+				this.colsToKeep = colsToKeep;
+				this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
+				this.bb.flip();
 			}
 
 			public void print(int[] arr) {
@@ -83,24 +87,44 @@ public class FilterProjectScan extends RAOperation {
 				// System.err.println("rowsRemaining is " + this.rowsRemaining);
 				// System.err.println("hasNext is " + (this.rowsRemaining > 0));
 				long start = System.currentTimeMillis();
-				int rowBufferSize = DatabaseEngine.scanBufferSize;
+				// int rowBufferSize = DatabaseEngine.scanBufferSize;
 				try {
 					
 					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
 
-						byte[] buffer = new byte[4 * numCols * rowBufferSize];
+						int index = 0;
 
-						int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
-						// System.out.println("row buffer size is " + rowBufferSize);
-						// System.out.println("rowsRemaining is " + rowsRemaining);
-						for (int j = 0; j < bytesRead / 4; j += this.numCols) {
-							int[] oldRow = new int[numCols];
-							for (int i = 0; i < numCols; i++) {
-								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
-								int value = byteArrayToInt(newByteArr);
-								oldRow[i] = value;
+						int[] oldRow = new int[this.numCols];
+						while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
+							int value = bb.getInt();
+							oldRow[index] = value;
+							index = (index + 1) % this.numCols;
+							if (index == 0) {
+								int[] newRow = new int[this.colsToKeep.length];
+							
+								for (int i = 0; i < this.colsToKeep.length; i++) {
+									newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
+								}
+
+								if (predicate.test(newRow)) {
+									rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+								}
+								rowsRemaining--;
 							}
+						}
 
+
+						boolean finishRow = (index != 0);
+
+						byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
+						dis.read(buffer);
+						bb = ByteBuffer.wrap(buffer);
+
+						if (finishRow) {
+							while (index < this.numCols) {
+								oldRow[index] = bb.getInt();
+								index++;
+							}
 							int[] newRow = new int[this.colsToKeep.length];
 							
 							for (int i = 0; i < this.colsToKeep.length; i++) {
@@ -112,6 +136,33 @@ public class FilterProjectScan extends RAOperation {
 							}
 							rowsRemaining--;
 						}
+
+
+
+						// byte[] buffer = new byte[4 * numCols * rowBufferSize];
+
+						// int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
+						// // System.out.println("row buffer size is " + rowBufferSize);
+						// // System.out.println("rowsRemaining is " + rowsRemaining);
+						// for (int j = 0; j < bytesRead / 4; j += this.numCols) {
+						// 	int[] oldRow = new int[numCols];
+						// 	for (int i = 0; i < numCols; i++) {
+						// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
+						// 		int value = byteArrayToInt(newByteArr);
+						// 		oldRow[i] = value;
+						// 	}
+
+						// 	int[] newRow = new int[this.colsToKeep.length];
+							
+						// 	for (int i = 0; i < this.colsToKeep.length; i++) {
+						// 		newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
+						// 	}
+
+							// if (predicate.test(newRow)) {
+							// 	rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+							// }
+						// 	rowsRemaining--;
+						// }
 					}
 					
 				} catch (IOException e) { // Done reading the table

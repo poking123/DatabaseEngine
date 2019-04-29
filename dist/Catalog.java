@@ -10,8 +10,7 @@ public class Catalog {
     private static HashMap<String, TableMetaData> metaDataMap = new HashMap<>();
     
     public static DataInputStream openStream(String tableName) throws FileNotFoundException {
-    	// return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName), 4 * 1024));
-    	return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName)));
+    	return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName), 4 * 1024));
     }
     
     public static boolean containsTable(String tableName) {

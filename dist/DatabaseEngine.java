@@ -5,9 +5,11 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 500000;
+	static final int bufferSize = 1000000;
 	static int tempNumber = 0;
-	static final int scanBufferSize = 1024;
+	static int byteBufferSize = 1024 * 9;
+	static int dataInputBufferSize = 1024 * 8;
+	// static final int scanBufferSize = 1024;
 
 	// static HashMap<String, String> sortedColumnsMap = new HashMap<>();
 
@@ -28,6 +30,7 @@ public class DatabaseEngine {
 		Loader loader = new Loader();
 		
 		Scanner scanner = new Scanner(System.in);
+		////
 		
 		// Get the CSV files
 		String CSVFiles = loader.getCSVFiles(scanner);
@@ -233,7 +236,7 @@ public class DatabaseEngine {
 
 		//Scanner queryScanner = new Scanner(System.in);
 		
-		// scanner = new Scanner(new File("../../data/m/queries.sql"));
+		// scanner = new Scanner(new File("../../data/s/queries.sql"));
 		// scanner = new Scanner(new File("../../data/xxs/queryTest.sql"));
 		// Gets the number of queries
 		int numOfQueries = parser.getNumOfQueries(scanner);

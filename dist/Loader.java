@@ -156,25 +156,72 @@ public class Loader {
 		// for debugging, to read the data
 		// String fileNameToRead = DatabaseEngine.sortedColumnsMap.get(tableName + "" + tableJoinCol + ".dat");
 
+
 		// int rowBufferSize = 2;
 		// DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat"))); 
-		// while (dis.available() != 0) {
-		// 	byte[] buffer = new byte[1024 * 4];
+		// int intArrReadIndex = 0;
+		// int intArrIndex = 0;
+		// int[] arrayOfIntegers = new int[1024];
 
-		// 	int bytesRead = dis.read(buffer, 0, 4 * numOfCols * rowBufferSize);
+		// ByteBuffer bb = ByteBuffer.allocate(1024 * 8);
+		// bb.flip();
+		
+		// while (numOfRows > 0) {
+		// 	index = 0;	
+			
 
-
-		// 	for (int j = 0; j < bytesRead / 4; j += numOfCols) {
-
-		// 		int[] row = new int[numOfCols];
-		// 		for (int i = 0; i < numOfCols; i++) {
-		// 			byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + 4 * j, 4 * i + 4 + 4 * j);
-		// 			int value = fromByteArray(newByteArr);
-		// 			row[i] = value;
+		// 	int[] oldRow = new int[numOfCols];
+		// 	while (index < numOfCols && bb.hasRemaining() && numOfRows > 0) {
+		// 		int value = bb.getInt();
+		// 		oldRow[index] = value;
+		// 		index = (index + 1) % numOfCols;
+		// 		if (index == 0) {
+		// 			numOfRows--;
 		// 		}
-
-		// 		print(row);
 		// 	}
+			
+
+		// 	boolean finishRow = (index != 0);
+
+		// 	byte[] buffer = new byte[4 * 1024];
+		// 	int bytesRead = dis.read(buffer);
+		// 	bb = ByteBuffer.wrap(buffer);
+
+		// 	if (finishRow) {
+		// 		while (index < numOfCols) {
+		// 			oldRow[index] = bb.getInt();
+		// 			index++;
+		// 		}
+		// 		numOfRows--;
+		// 	}
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// 	// byte[] buffer = new byte[1024 * 4];
+
+		// 	// int bytesRead = dis.read(buffer, 0, 4 * numOfCols * rowBufferSize);
+
+		// 	// // for each integer, put it in the intbuffer
+		// 	// for (int j = 0; j < bytesRead / 4; j += numOfCols) {
+		// 	// 	for (int i = 0; i < numOfCols; i++) {
+		// 	// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + 4 * j, 4 * i + 4 + 4 * j);
+		// 	// 		int value = fromByteArray(newByteArr);
+		// 	// 		arrayOfIntegers[intArrIndex] = value;
+		// 	// 		intArrIndex = (intArrIndex + 1) % arrayOfIntegers.length;
+		// 	// 	}
+
+		// 	// }
 		// }
 		// System.exit(0);
 		// for (int i = 0; i < 2; i++) {

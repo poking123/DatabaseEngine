@@ -43,13 +43,16 @@ public class ProjectScan extends RAOperation {
 			private final DataInputStream dis;
 			private final int numCols;
             private int rowsRemaining;
-            private int[] colsToKeep;
+			private int[] colsToKeep;
+			private ByteBuffer bb;
 			
 			public ProjectScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName, int[] colsToKeep) throws FileNotFoundException {
 				this.dis = Catalog.openStream(tableName);
 				this.numCols = Catalog.getColumns(tableName);
                 this.rowsRemaining = Catalog.getRows(tableName);
-                this.colsToKeep = colsToKeep;
+				this.colsToKeep = colsToKeep;
+				this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
+				this.bb.flip();
 			}
 			
 			@Override
@@ -71,23 +74,41 @@ public class ProjectScan extends RAOperation {
 			@Override
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
-				int rowBufferSize = DatabaseEngine.scanBufferSize;
+				// int rowBufferSize = DatabaseEngine.scanBufferSize;
 				long start = System.currentTimeMillis();
 				try {
 					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
 
-						byte[] buffer = new byte[4 * numCols * rowBufferSize];
+						int index = 0;
 
-						int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
-
-						for (int j = 0; j < bytesRead / 4; j += this.numCols) {
-							int[] oldRow = new int[numCols];
-							for (int i = 0; i < numCols; i++) {
-								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
-								int value = byteArrayToInt(newByteArr);
-								oldRow[i] = value;
+						int[] oldRow = new int[this.numCols];
+						while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
+							int value = bb.getInt();
+							oldRow[index] = value;
+							index = (index + 1) % this.numCols;
+							if (index == 0) {
+								int[] newRow = new int[this.colsToKeep.length];
+							
+								for (int i = 0; i < this.colsToKeep.length; i++) {
+									newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
+								}
+								rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+								rowsRemaining--;
 							}
+						}
 
+
+						boolean finishRow = (index != 0);
+
+						byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
+						dis.read(buffer);
+						bb = ByteBuffer.wrap(buffer);
+
+						if (finishRow) {
+							while (index < this.numCols) {
+								oldRow[index] = bb.getInt();
+								index++;
+							}
 							int[] newRow = new int[this.colsToKeep.length];
 							
 							for (int i = 0; i < this.colsToKeep.length; i++) {
@@ -96,6 +117,29 @@ public class ProjectScan extends RAOperation {
 							rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
 							rowsRemaining--;
 						}
+
+
+
+						// byte[] buffer = new byte[4 * numCols * rowBufferSize];
+
+						// int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
+
+						// for (int j = 0; j < bytesRead / 4; j += this.numCols) {
+						// 	int[] oldRow = new int[numCols];
+						// 	for (int i = 0; i < numCols; i++) {
+						// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
+						// 		int value = byteArrayToInt(newByteArr);
+						// 		oldRow[i] = value;
+						// 	}
+
+							// int[] newRow = new int[this.colsToKeep.length];
+							
+							// for (int i = 0; i < this.colsToKeep.length; i++) {
+							// 	newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
+							// }
+							// rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+						// 	rowsRemaining--;
+						// }
 
 						
 					}

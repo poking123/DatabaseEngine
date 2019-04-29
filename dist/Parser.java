@@ -95,7 +95,7 @@ public class Parser {
 	}
 
 	public int getNumOfQueries(Scanner queryScanner) {
-		// return 17;
+		// return 30;
 		return Integer.parseInt(queryScanner.nextLine());
 	}
 }
