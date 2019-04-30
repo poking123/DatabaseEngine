@@ -276,15 +276,6 @@ public class Loader {
 
 	}
 
-	public void print(int[] arr) {
-		for (int i : arr)
-			System.out.print(i + " ");
-		System.out.println();
-	}
-
-	public int fromByteArray(byte[] bytes) {
-		return ByteBuffer.wrap(bytes).getInt();
-   }
 	
 	// returns the String of CSV files
 	public String getCSVFiles(Scanner scanner) {

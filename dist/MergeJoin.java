@@ -3,6 +3,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -59,8 +60,12 @@ public class MergeJoin extends RAOperation {
 		private String table1FinalName;
 		private String table2FinalName;
 		
-		private DataInputStream dis1;
-		private DataInputStream dis2;
+		// private DataInputStream dis1;
+		// private DataInputStream dis2;
+
+		private MappedByteBuffer dis1;
+		private MappedByteBuffer dis2;
+		
 		
 		private int dis1Value;
 		private int dis2Value;
@@ -115,8 +120,11 @@ public class MergeJoin extends RAOperation {
 
 			this.noHasNext = false;
 			if (!(table1FinalName.equals("noRows") || table2FinalName.equals("noRows"))) {
-				this.dis1 = Catalog.openStream(table1FinalName);
-				this.dis2 = Catalog.openStream(table2FinalName);
+				// this.dis1 = Catalog.openStream(table1FinalName);
+				// this.dis2 = Catalog.openStream(table2FinalName);
+
+				this.dis1 = Catalog.openChannel(table1FinalName);
+				this.dis2 = Catalog.openChannel(table2FinalName);
 				// for debugging - printing out all rows
 				///
 				// if (this.table1JoinCol == 5 && this.table2JoinCol == 0) {
@@ -135,44 +143,46 @@ public class MergeJoin extends RAOperation {
 				dis1Queue = new LinkedList<>();
 				dis2Queue = new LinkedList<>();
 				
-				if (dis1.available() != 0 && dis2.available() != 0) {
+				if (dis1.hasRemaining() && dis2.hasRemaining()) {
 					this.noRows = false;
 					// adds the first row for each table and declares the join column value
 					int[] dis1Row = new int[this.table1Cols];
 					
-					byte[] buffer = new byte[4 * this.table1Cols];
+					// byte[] buffer = new byte[4 * this.table1Cols];
 
-					dis1.read(buffer, 0, 4 * this.table1Cols);
+					// dis1.read(buffer, 0, 4 * this.table1Cols);
 					for (int i = 0; i < this.table1Cols; i++) {
-						byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-						int value = byteArrayToInt(newByteArr);
-						dis1Row[i] = value;
+						// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+						// int value = byteArrayToInt(newByteArr);
+						// dis1Row[i] = value;
+						dis1Row[i] = dis1.getInt();
 					}
 
 
 					dis1Value = dis1Row[this.table1JoinCol];
 					dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
 					dis1Row = null;
-					if (dis1.available() == 0) {
+					if (!dis1.hasRemaining()) {
 						this.table1Done = true;
 					} else {
 						this.table1Done = false;
 					}
 					
 					int[] dis2Row = new int[this.table2Cols];
-					buffer = new byte[4 * this.table2Cols];
+					// buffer = new byte[4 * this.table2Cols];
 
-					dis2.read(buffer, 0, 4 * this.table2Cols);
+					// dis2.read(buffer, 0, 4 * this.table2Cols);
 					for (int i = 0; i < this.table2Cols; i++) {
-						byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-						int value = byteArrayToInt(newByteArr);
-						dis2Row[i] = value;
+						// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+						// int value = byteArrayToInt(newByteArr);
+						// dis2Row[i] = value;
+						dis2Row[i] = dis2.getInt();
 					}
 
 					dis2Value = dis2Row[this.table2JoinCol];
 					dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
 					dis2Row = null;
-					if (dis2.available() == 0) {
+					if (!dis2.hasRemaining()) {
 						this.table2Done = true;
 					} else {
 						this.table2Done = false;
@@ -269,337 +279,347 @@ public class MergeJoin extends RAOperation {
 				// System.out.println("table1Done is " + table1Done);
 				// System.out.println("table2Done is " + table2Done);
 
-				try {
-					if (!table1Done && !table2Done) {
-						
-						// System.out.println("table1Cols is " + this.table1Cols);
-						// System.out.println("table2Cols is " + this.table2Cols);
-						
-						while (dis1Value != dis2Value && !table1Done && !table2Done) {
-							// moves dis1Value up to dis2Value
-							while (!table1Done && dis1Value < dis2Value) {
-								this.dis1Queue.clear();
-								int[] dis1Row = new int[this.table1Cols];
-								byte[] buffer = new byte[4 * this.table1Cols];
+				if (!table1Done && !table2Done) {
 
-								dis1.read(buffer, 0, 4 * this.table1Cols);
-								for (int i = 0; i < this.table1Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis1Row[i] = value;
-								}
-								if (dis1.available() == 0) table1Done = true;
-								// new dis1Value
-								dis1Value = dis1Row[this.table1JoinCol];
-								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
-								dis1Row = null;
-							}
-							// moves dis2Value up to dis1Value
-							while (!table2Done && dis2Value < dis1Value) {
-								this.dis2Queue.clear();
-								int[] dis2Row = new int[this.table2Cols];
-								byte[] buffer = new byte[4 * this.table2Cols];
+					// System.out.println("table1Cols is " + this.table1Cols);
+					// System.out.println("table2Cols is " + this.table2Cols);
 
-								dis2.read(buffer, 0, 4 * this.table2Cols);
-								for (int i = 0; i < this.table2Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis2Row[i] = value;
-								}
-								if (dis2.available() == 0) table2Done = true;
-								// new dis2Value
-								dis2Value = dis2Row[this.table2JoinCol];
-								dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
-								dis2Row = null;
-							}
-						}
+					while (dis1Value != dis2Value && !table1Done && !table2Done) {
+						// moves dis1Value up to dis2Value
+						while (!table1Done && dis1Value < dis2Value) {
+							this.dis1Queue.clear();
+							int[] dis1Row = new int[this.table1Cols];
+							// byte[] buffer = new byte[4 * this.table1Cols];
 
-						// if table 2 is done reading, we will have left the above while loop immediately
-						// so we have to finish reading table1 to get dis1Value = dis2Value
-						if (!table1Done && (dis1Value != dis2Value)) {
-							while (!table1Done && dis1Value < dis2Value) {
-								this.dis1Queue.clear();
-								int[] dis1Row = new int[this.table1Cols];
-								byte[] buffer = new byte[4 * this.table1Cols];
-
-								dis1.read(buffer, 0, 4 * this.table1Cols);
-								for (int i = 0; i < this.table1Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis1Row[i] = value;
-								}
-
-								if (dis1.available() == 0) table1Done = true;
-								// new dis1Value
-								dis1Value = dis1Row[this.table1JoinCol];
-								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
-								dis1Row = null;
-							}
-						}
-						
-						// if we're still not equal - we don't need to check anymore - break
-						if (dis1Value != dis2Value) {
-							this.noRows = true;
-							break;
-						}
-						
-						// Boths values are equal
-						// add same join col rows to dis1Queue
-
-						// We want to get the next values of dis1 with the same (equal) value
-						// we need a value to compare it first
-						int[] dis1Row = new int[this.table1Cols];
-						if (!table1Done) {
-							byte[] buffer = new byte[4 * this.table1Cols];
-
-							dis1.read(buffer, 0, 4 * this.table1Cols);
+							// dis1.read(buffer, 0, 4 * this.table1Cols);
 							for (int i = 0; i < this.table1Cols; i++) {
-								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-								int value = byteArrayToInt(newByteArr);
-								dis1Row[i] = value;
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis1Row[i] = value;
+								dis1Row[i] = dis1.getInt();
+							}
+							if (!dis1.hasRemaining())
+								table1Done = true;
+							// new dis1Value
+							dis1Value = dis1Row[this.table1JoinCol];
+							dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+							dis1Row = null;
+						}
+						// moves dis2Value up to dis1Value
+						while (!table2Done && dis2Value < dis1Value) {
+							this.dis2Queue.clear();
+							int[] dis2Row = new int[this.table2Cols];
+							// byte[] buffer = new byte[4 * this.table2Cols];
+
+							// dis2.read(buffer, 0, 4 * this.table2Cols);
+							for (int i = 0; i < this.table2Cols; i++) {
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis2Row[i] = value;
+								dis2Row[i] = dis2.getInt();
+							}
+							if (!dis2.hasRemaining())
+								table2Done = true;
+							// new dis2Value
+							dis2Value = dis2Row[this.table2JoinCol];
+							dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+							dis2Row = null;
+						}
+					}
+
+					// if table 2 is done reading, we will have left the above while loop
+					// immediately
+					// so we have to finish reading table1 to get dis1Value = dis2Value
+					if (!table1Done && (dis1Value != dis2Value)) {
+						while (!table1Done && dis1Value < dis2Value) {
+							this.dis1Queue.clear();
+							int[] dis1Row = new int[this.table1Cols];
+							// byte[] buffer = new byte[4 * this.table1Cols];
+
+							// dis1.read(buffer, 0, 4 * this.table1Cols);
+							for (int i = 0; i < this.table1Cols; i++) {
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis1Row[i] = value;
+								dis1Row[i] = dis1.getInt();
 							}
 
-							if (dis1.available() == 0) {
+							if (!dis1.hasRemaining())
+								table1Done = true;
+							// new dis1Value
+							dis1Value = dis1Row[this.table1JoinCol];
+							dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+							dis1Row = null;
+						}
+					}
+
+					// if we're still not equal - we don't need to check anymore - break
+					if (dis1Value != dis2Value) {
+						this.noRows = true;
+						break;
+					}
+
+					// Boths values are equal
+					// add same join col rows to dis1Queue
+
+					// We want to get the next values of dis1 with the same (equal) value
+					// we need a value to compare it first
+					int[] dis1Row = new int[this.table1Cols];
+					if (!table1Done) {
+						// byte[] buffer = new byte[4 * this.table1Cols];
+
+						// dis1.read(buffer, 0, 4 * this.table1Cols);
+						for (int i = 0; i < this.table1Cols; i++) {
+							// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+							// int value = byteArrayToInt(newByteArr);
+							// dis1Row[i] = value;
+							dis1Row[i] = dis1.getInt();
+						}
+
+						if (!dis1.hasRemaining()) {
+							table1Done = true;
+						}
+					} else {
+						dis1Row = dis1Queue.remove();
+					}
+
+					// while our compare value is equal, we add it to the queue and get the next
+					// value
+					while (dis1Row[this.table1JoinCol] == dis1Value) {
+						// System.out.println("Added table 1 row");
+						// print(dis1Row);
+						dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+						// System.out.println("dis1Queue size is " + dis1Queue.size());
+						if (!table1Done) {
+							// byte[] buffer = new byte[4 * this.table1Cols];
+
+							// dis1.read(buffer, 0, 4 * this.table1Cols);
+							for (int i = 0; i < this.table1Cols; i++) {
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis1Row[i] = value;
+								dis1Row[i] = dis1.getInt();
+							}
+
+							if (!dis1.hasRemaining()) {
 								table1Done = true;
 							}
 						} else {
-							dis1Row = dis1Queue.remove();
-						}
-						
-						// while our compare value is equal, we add it to the queue and get the next value
-						while (dis1Row[this.table1JoinCol] == dis1Value) {
-							// System.out.println("Added table 1 row");
-							// print(dis1Row);
-							dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
-							// System.out.println("dis1Queue size is " + dis1Queue.size());
-							if (!table1Done) {
-								byte[] buffer = new byte[4 * this.table1Cols];
-
-								dis1.read(buffer, 0, 4 * this.table1Cols);
-								for (int i = 0; i < this.table1Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis1Row[i] = value;
-								}
-
-								if (dis1.available() == 0) {
-									table1Done = true;
-								}
-							} else {
-								break;
-							}
-						}
-						// After we're done reading the last value, we don't know if it looped and added itself to the queue
-						// or if the last value has a different value
-						if (dis1Row[this.table1JoinCol] == dis1Value) { // no last value
-							dis1HolderRow = null;
-						} else { // we have a last value with a different value
-							dis1HolderRow = dis1Row;
-						}
-						
-						
-						// add same join col rows to dis2Queue
-						// We want to get the next values of dis1 with the same (equal) value
-						// we need a value to compare it first
-						int[] dis2Row = new int[this.table2Cols];
-						if (!table2Done) {
-							byte[] buffer = new byte[4 * this.table2Cols];
-
-							dis2.read(buffer, 0, 4 * this.table2Cols);
-							for (int i = 0; i < this.table2Cols; i++) {
-								byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-								int value = byteArrayToInt(newByteArr);
-								dis2Row[i] = value;
-							}
-
-							if (dis2.available() == 0) {
-								table2Done = true;
-							}
-						} else {
-							dis2Row = dis2Queue.remove();
-						}
-						
-						// while our compare value is equal, we add it to the queue and get the next value
-						while (dis2Row[this.table2JoinCol] == dis2Value) {
-							dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
-							if (!table2Done) {
-								byte[] buffer = new byte[4 * this.table2Cols];
-
-								dis2.read(buffer, 0, 4 * this.table2Cols);
-								for (int i = 0; i < this.table2Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis2Row[i] = value;
-								}
-
-								if (dis2.available() == 0) {
-									table2Done = true;
-								}
-							} else {
-								break;
-							}
-						}
-						// After we're done reading the last value, we don't know if it looped and added itself to the queue
-						// or if the last value has a different value
-						if (dis2Row[this.table2JoinCol] == dis2Value) { // no last value
-							dis2HolderRow = null;
-						} else { // we have a last value with a different value
-							dis2HolderRow = dis2Row;
-						}
-
-
-						// System.out.println("Make Combinations");
-						// add all combinations of matched rows
-						this.hasCombinationsLeft = makeCombinations(rowsToReturn);
-						if (this.hasCombinationsLeft) {
-							return rowsToReturn;
-						}
-						
-						// add holders to empty queues
-						dis2Queue.clear();
-						
-						if (dis1HolderRow != null) {
-							dis1Value = dis1HolderRow[this.table1JoinCol];
-							dis1Queue.add(Arrays.copyOf(dis1HolderRow, dis1HolderRow.length));
-						}
-							
-						if (dis2HolderRow != null) {
-							dis2Value = dis2HolderRow[this.table2JoinCol];
-							dis2Queue.add(Arrays.copyOf(dis2HolderRow, dis2HolderRow.length));
-						}
-							
-						
-					} else {
-						if(table1Done && table2Done) {
-							if (dis1Queue.size() > 0 && dis2Queue.size() > 0) {
-							//if (dis1Queue.size() == 1 && dis2Queue.size() == 1) {
-								// int[] oldRow = combineRows(dis1Queue.remove(), dis2Queue.remove());
-								// int[] newRow = new int[this.colsToKeep.length];
-								// for (int i = 0; i < newRow.length; i++) {
-								// 	newRow[i] = oldRow[this.colsToKeep[i]];
-								// }
-								// rowsToReturn.add(newRow);
-
-								// old code
-								//rowsToReturn.add(combineRows(dis1Queue.remove(), dis2Queue.remove()));
-
-								// make combinations
-								this.hasCombinationsLeft = makeCombinations(rowsToReturn);
-								if (this.hasCombinationsLeft) {
-									return rowsToReturn;
-								}
-							}
-
-								
 							break;
 						}
+					}
+					// After we're done reading the last value, we don't know if it looped and added
+					// itself to the queue
+					// or if the last value has a different value
+					if (dis1Row[this.table1JoinCol] == dis1Value) { // no last value
+						dis1HolderRow = null;
+					} else { // we have a last value with a different value
+						dis1HolderRow = dis1Row;
+					}
 
-						if (table2Done) {
-							// System.out.println("Done reading Table2");
-							while (!table1Done && dis1Value < dis2Value) {
-								this.dis1Queue.clear();
-								int[] dis1Row = new int[this.table1Cols];
-								byte[] buffer = new byte[4 * this.table1Cols];
+					// add same join col rows to dis2Queue
+					// We want to get the next values of dis1 with the same (equal) value
+					// we need a value to compare it first
+					int[] dis2Row = new int[this.table2Cols];
+					if (!table2Done) {
+						// byte[] buffer = new byte[4 * this.table2Cols];
 
-								dis1.read(buffer, 0, 4 * this.table1Cols);
-								for (int i = 0; i < this.table1Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis1Row[i] = value;
-								}
+						// dis2.read(buffer, 0, 4 * this.table2Cols);
+						for (int i = 0; i < this.table2Cols; i++) {
+							// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+							// int value = byteArrayToInt(newByteArr);
+							// dis2Row[i] = value;
+							dis2Row[i] = dis2.getInt();
+						}
 
-								if (dis1.available() == 0) table1Done = true;
-								// new dis1Value
-								dis1Value = dis1Row[this.table1JoinCol];
-								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
-								dis1Row = null;
-							}
-
-							if (dis1Value == dis2Value) {
-								int[] dis1Row = dis1Queue.remove();
-								while (dis1Row[this.table1JoinCol] == dis1Value) {
-									dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
-									if (!table1Done) {
-										byte[] buffer = new byte[4 * this.table1Cols];
-
-										dis1.read(buffer, 0, 4 * this.table1Cols);
-										for (int i = 0; i < this.table1Cols; i++) {
-											byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-											int value = byteArrayToInt(newByteArr);
-											dis1Row[i] = value;
-										}
-										if (dis1.available() == 0) {
-											table1Done = true;
-										}
-									} else {
-										break;
-									}
-								}
-								table1Done = true;
-								this.hasCombinationsLeft = makeCombinations(rowsToReturn);
-								if (this.hasCombinationsLeft) {
-									return rowsToReturn;
-								}
-								
-							}
-							table1Done = true;
-						} else if (table1Done) {
-							// System.out.println("got in table1Done after file already read");
-							while (!table2Done && dis2Value < dis1Value) {
-								this.dis2Queue.clear();
-								int[] dis2Row = new int[this.table2Cols];
-								byte[] buffer = new byte[4 * this.table2Cols];
-
-								dis2.read(buffer, 0, 4 * this.table2Cols);
-								for (int i = 0; i < this.table2Cols; i++) {
-									byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-									int value = byteArrayToInt(newByteArr);
-									dis2Row[i] = value;
-								}
-
-								if (dis2.available() == 0) table2Done = true;
-								// new dis2Value
-								dis2Value = dis2Row[this.table2JoinCol];
-								dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
-								dis2Row = null;
-							}
-
-
-							if (dis1Value == dis2Value) {
-								int[] dis2Row = dis2Queue.remove();
-								while (dis2Row[this.table2JoinCol] == dis2Value) {
-									dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
-									if (!table2Done) {
-										byte[] buffer = new byte[4 * this.table2Cols];
-
-										dis2.read(buffer, 0, 4 * this.table2Cols);
-										for (int i = 0; i < this.table2Cols; i++) {
-											byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
-											int value = byteArrayToInt(newByteArr);
-											dis2Row[i] = value;
-										}
-										
-										if (dis2.available() == 0) {
-											table2Done = true;
-										}
-									} else {
-										break;
-									}
-								}
-								table2Done = true;
-								this.hasCombinationsLeft = makeCombinations(rowsToReturn);
-								if (this.hasCombinationsLeft) {
-									return rowsToReturn;
-								}
-							}
+						if (!dis2.hasRemaining()) {
 							table2Done = true;
+						}
+					} else {
+						dis2Row = dis2Queue.remove();
+					}
+
+					// while our compare value is equal, we add it to the queue and get the next
+					// value
+					while (dis2Row[this.table2JoinCol] == dis2Value) {
+						dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+						if (!table2Done) {
+							// byte[] buffer = new byte[4 * this.table2Cols];
+
+							// dis2.read(buffer, 0, 4 * this.table2Cols);
+							for (int i = 0; i < this.table2Cols; i++) {
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis2Row[i] = value;
+								dis2Row[i] = dis2.getInt();
+							}
+
+							if (!dis2.hasRemaining()) {
+								table2Done = true;
+							}
+						} else {
+							break;
+						}
+					}
+					// After we're done reading the last value, we don't know if it looped and added
+					// itself to the queue
+					// or if the last value has a different value
+					if (dis2Row[this.table2JoinCol] == dis2Value) { // no last value
+						dis2HolderRow = null;
+					} else { // we have a last value with a different value
+						dis2HolderRow = dis2Row;
+					}
+
+					// System.out.println("Make Combinations");
+					// add all combinations of matched rows
+					this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+					if (this.hasCombinationsLeft) {
+						return rowsToReturn;
+					}
+
+					// add holders to empty queues
+					dis2Queue.clear();
+
+					if (dis1HolderRow != null) {
+						dis1Value = dis1HolderRow[this.table1JoinCol];
+						dis1Queue.add(Arrays.copyOf(dis1HolderRow, dis1HolderRow.length));
+					}
+
+					if (dis2HolderRow != null) {
+						dis2Value = dis2HolderRow[this.table2JoinCol];
+						dis2Queue.add(Arrays.copyOf(dis2HolderRow, dis2HolderRow.length));
+					}
+
+				} else {
+					if (table1Done && table2Done) {
+						if (dis1Queue.size() > 0 && dis2Queue.size() > 0) {
+							// if (dis1Queue.size() == 1 && dis2Queue.size() == 1) {
+							// int[] oldRow = combineRows(dis1Queue.remove(), dis2Queue.remove());
+							// int[] newRow = new int[this.colsToKeep.length];
+							// for (int i = 0; i < newRow.length; i++) {
+							// newRow[i] = oldRow[this.colsToKeep[i]];
+							// }
+							// rowsToReturn.add(newRow);
+
+							// old code
+							// rowsToReturn.add(combineRows(dis1Queue.remove(), dis2Queue.remove()));
+
+							// make combinations
+							this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+							if (this.hasCombinationsLeft) {
+								return rowsToReturn;
+							}
 						}
 
 						break;
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-					
+
+					if (table2Done) {
+						// System.out.println("Done reading Table2");
+						while (!table1Done && dis1Value < dis2Value) {
+							this.dis1Queue.clear();
+							int[] dis1Row = new int[this.table1Cols];
+							// byte[] buffer = new byte[4 * this.table1Cols];
+
+							// dis1.read(buffer, 0, 4 * this.table1Cols);
+							for (int i = 0; i < this.table1Cols; i++) {
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis1Row[i] = value;
+								dis1Row[i] = dis1.getInt();
+							}
+
+							if (!dis1.hasRemaining())
+								table1Done = true;
+							// new dis1Value
+							dis1Value = dis1Row[this.table1JoinCol];
+							dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+							dis1Row = null;
+						}
+
+						if (dis1Value == dis2Value) {
+							int[] dis1Row = dis1Queue.remove();
+							while (dis1Row[this.table1JoinCol] == dis1Value) {
+								dis1Queue.add(Arrays.copyOf(dis1Row, dis1Row.length));
+								if (!table1Done) {
+									// byte[] buffer = new byte[4 * this.table1Cols];
+
+									// dis1.read(buffer, 0, 4 * this.table1Cols);
+									for (int i = 0; i < this.table1Cols; i++) {
+										// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+										// int value = byteArrayToInt(newByteArr);
+										// dis1Row[i] = value;
+										dis1Row[i] = dis1.getInt();
+									}
+									if (!dis1.hasRemaining()) {
+										table1Done = true;
+									}
+								} else {
+									break;
+								}
+							}
+							table1Done = true;
+							this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+							if (this.hasCombinationsLeft) {
+								return rowsToReturn;
+							}
+
+						}
+						table1Done = true;
+					} else if (table1Done) {
+						// System.out.println("got in table1Done after file already read");
+						while (!table2Done && dis2Value < dis1Value) {
+							this.dis2Queue.clear();
+							int[] dis2Row = new int[this.table2Cols];
+							// byte[] buffer = new byte[4 * this.table2Cols];
+
+							// dis2.read(buffer, 0, 4 * this.table2Cols);
+							for (int i = 0; i < this.table2Cols; i++) {
+								// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+								// int value = byteArrayToInt(newByteArr);
+								// dis2Row[i] = value;
+								dis2Row[i] = dis2.getInt();
+							}
+
+							if (!dis2.hasRemaining())
+								table2Done = true;
+							// new dis2Value
+							dis2Value = dis2Row[this.table2JoinCol];
+							dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+							dis2Row = null;
+						}
+
+						if (dis1Value == dis2Value) {
+							int[] dis2Row = dis2Queue.remove();
+							while (dis2Row[this.table2JoinCol] == dis2Value) {
+								dis2Queue.add(Arrays.copyOf(dis2Row, dis2Row.length));
+								if (!table2Done) {
+									// byte[] buffer = new byte[4 * this.table2Cols];
+
+									// dis2.read(buffer, 0, 4 * this.table2Cols);
+									for (int i = 0; i < this.table2Cols; i++) {
+										// byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i, 4 * i + 4);
+										// int value = byteArrayToInt(newByteArr);
+										// dis2Row[i] = value;
+										dis2Row[i] = dis2.getInt();
+									}
+
+									if (!dis2.hasRemaining()) {
+										table2Done = true;
+									}
+								} else {
+									break;
+								}
+							}
+							table2Done = true;
+							this.hasCombinationsLeft = makeCombinations(rowsToReturn);
+							if (this.hasCombinationsLeft) {
+								return rowsToReturn;
+							}
+						}
+						table2Done = true;
+					}
+
 					break;
 				}
 			}

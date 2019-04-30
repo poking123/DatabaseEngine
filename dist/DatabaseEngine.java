@@ -5,10 +5,10 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 1200000;
+	static final int bufferSize = 1000000;
 	static int tempNumber = 0;
-	static int byteBufferSize = 1024 * 2;
-	static int dataInputBufferSize = 1024 * 1;
+	// static int byteBufferSize = 1024 * 2;
+	// static int dataInputBufferSize = 1024 * 1;
 	// static final int scanBufferSize = 1024;
 
 	// static HashMap<String, String> sortedColumnsMap = new HashMap<>();
@@ -265,11 +265,11 @@ public class DatabaseEngine {
 			// Gets rid of all the data in the parser
 			parser.empty();
 
-			long start = System.currentTimeMillis();
+			// long start = System.currentTimeMillis();
 			// Execute Query
 			executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum(), optimizer.getswitchesQueue());
-			long stop = System.currentTimeMillis();
-			System.err.println("Execution Time: " + (stop - start));
+			// long stop = System.currentTimeMillis();
+			// System.err.println("Execution Time: " + (stop - start));
 			// totalExecutionTime += (stop - start);
 
 			
@@ -279,11 +279,11 @@ public class DatabaseEngine {
 
 		optimizer.optimizeQuery(parser.getSelectColumnNames(), parser.getFromData(), parser.getWhereData(), parser.getAndData());
 		
-		long start = System.currentTimeMillis();
+		// long start = System.currentTimeMillis();
 		// Execute Query
 		executionEngine.executeQuery(optimizer.getTablesQueue(), optimizer.getPredicatesQueue(), optimizer.getFinalPredicateQueue() , optimizer.getColumnsToSum(), optimizer.getswitchesQueue());
-		long stop = System.currentTimeMillis();
-		System.err.println("Execution Time: " + (stop - start));
+		// long stop = System.currentTimeMillis();
+		// System.err.println("Execution Time: " + (stop - start));
 		// totalExecutionTime += (stop - start);
 		
 		// long totalStop = System.currentTimeMillis();
