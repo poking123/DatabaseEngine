@@ -2,9 +2,10 @@
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -15,13 +16,15 @@ public class FilterProjectScan extends RAOperation {
     private String tableName;
     private int[] colsToKeep;
 	private FilterPredicate predicate;
-	
+	private HashSet<Integer> colsToKeepSet;
 	
 	
 	public FilterProjectScan(FilterPredicate p) throws FileNotFoundException {
         this.predicate = p;
         this.tableName = predicate.getTableName();
-        this.colsToKeep = predicate.getColumnsToKeep();
+		this.colsToKeep = predicate.getColumnsToKeep();
+		this.colsToKeepSet = new HashSet<>();
+		for (int i : colsToKeep) this.colsToKeepSet.add(i);
 	}
 
 	public String toString() {
@@ -43,19 +46,23 @@ public class FilterProjectScan extends RAOperation {
 	}
 	
 	public class FilterProjectScanIterator implements Iterator<Queue<int[]>> {		
-			private final DataInputStream dis;
+			// private final DataInputStream dis;
+			private MappedByteBuffer mbb;
 			private final int numCols;
             private int rowsRemaining;
-			private int[] colsToKeep;
-			private ByteBuffer bb;
+			// private ByteBuffer bb;
 			
 			public FilterProjectScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName, int[] colsToKeep) throws FileNotFoundException {
-				this.dis = Catalog.openStream(tableName);
+				// this.dis = Catalog.openStream(tableName);
+				try {
+					this.mbb = Catalog.openChannel(tableName);
+				} catch (IOException e) {
+					
+				}
 				this.numCols = Catalog.getColumns(tableName);
                 this.rowsRemaining = Catalog.getRows(tableName);
-				this.colsToKeep = colsToKeep;
-				this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
-				this.bb.flip();
+				// this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
+				// this.bb.flip();
 			}
 
 			public void print(int[] arr) {
@@ -71,115 +78,100 @@ public class FilterProjectScan extends RAOperation {
 				
 				return false;
 			}
-
-			public int fromByteArray(byte[] bytes) {
-				return ByteBuffer.wrap(bytes).getInt();
-		   }
-
-			public int byteArrayToInt(byte[] b) {
-				return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8 | (b[3] & 0xff);
-	 		}
 	
 			@Override
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
-				System.err.println("Starting filter");
+				// System.err.println("Starting filter");
 				// System.err.println("rowsRemaining is " + this.rowsRemaining);
 				// System.err.println("hasNext is " + (this.rowsRemaining > 0));
-				long start = System.currentTimeMillis();
+				// long start = System.currentTimeMillis();
 				// int rowBufferSize = DatabaseEngine.scanBufferSize;
-				try {
+				
 					
-					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
+				while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
 
-						int index = 0;
+					// int index = 0;
+					// int colsToKeepIndex = 0;
 
-						int[] oldRow = new int[this.numCols];
-						while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
-							int value = bb.getInt();
-							oldRow[index] = value;
-							index = (index + 1) % this.numCols;
-							if (index == 0) {
-								int[] newRow = new int[this.colsToKeep.length];
-							
-								for (int i = 0; i < this.colsToKeep.length; i++) {
-									newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
-								}
+					// int[] newRow = new int[colsToKeepSet.size()];
+					// while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
+					// 	int value = bb.getInt();
+					// 	if (colsToKeepSet.contains(index)) {
+					// 		newRow[colsToKeepIndex] = value;
+					// 		colsToKeepIndex++;
+					// 	}
 
-								if (predicate.test(newRow)) {
-									rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
-								}
-								rowsRemaining--;
-							}
+					// 	index = (index + 1) % this.numCols;
+					// 	if (index == 0) {
+					// 		colsToKeepIndex = 0;
+					// 		if (predicate.test(newRow)) {
+					// 			rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					// 		}
+					// 		rowsRemaining--;
+					// 	}
+					// }
+
+
+					// boolean finishRow = (index != 0);
+
+					// byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
+					// dis.read(buffer);
+					// bb = MappedByteBuffer.wrap(buffer);
+
+					// if (finishRow) {
+					// 	while (index < this.numCols) {
+					// 		int value = bb.getInt();
+					// 		if (colsToKeepSet.contains(index)) {
+					// 			newRow[colsToKeepIndex] = value;
+					// 			colsToKeepIndex++;
+					// 		}
+					// 		index++;
+					// 	}
+
+					// 	if (predicate.test(newRow)) {
+					// 		rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					// 	}
+					// 	rowsRemaining--;
+					// }
+
+
+					int index = 0;
+					int colsToKeepIndex = 0;
+
+					int[] newRow = new int[colsToKeep.length];
+					while (index < this.numCols) {
+						int value = mbb.getInt();
+						if (colsToKeepSet.contains(index)) {
+							newRow[colsToKeepIndex] = value;
+							colsToKeepIndex++;
 						}
-
-
-						boolean finishRow = (index != 0);
-
-						byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
-						dis.read(buffer);
-						bb = ByteBuffer.wrap(buffer);
-
-						if (finishRow) {
-							while (index < this.numCols) {
-								oldRow[index] = bb.getInt();
-								index++;
-							}
-							int[] newRow = new int[this.colsToKeep.length];
-							
-							for (int i = 0; i < this.colsToKeep.length; i++) {
-								newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
-							}
-
-							if (predicate.test(newRow)) {
-								rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
-							}
-							rowsRemaining--;
-						}
-
-
-
-						// byte[] buffer = new byte[4 * numCols * rowBufferSize];
-
-						// int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
-						// // System.out.println("row buffer size is " + rowBufferSize);
-						// // System.out.println("rowsRemaining is " + rowsRemaining);
-						// for (int j = 0; j < bytesRead / 4; j += this.numCols) {
-						// 	int[] oldRow = new int[numCols];
-						// 	for (int i = 0; i < numCols; i++) {
-						// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
-						// 		int value = byteArrayToInt(newByteArr);
-						// 		oldRow[i] = value;
-						// 	}
-
-						// 	int[] newRow = new int[this.colsToKeep.length];
-							
-						// 	for (int i = 0; i < this.colsToKeep.length; i++) {
-						// 		newRow[i] = oldRow[this.colsToKeep[i]]; // only saves the columns we want
-						// 	}
-
-							// if (predicate.test(newRow)) {
-							// 	rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
-							// }
-						// 	rowsRemaining--;
-						// }
+						index++;
 					}
-					
-				} catch (IOException e) { // Done reading the table
+					if (predicate.test(newRow)) {
+						rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					}
+					rowsRemaining--;
+					index = 0;
+					colsToKeepIndex = 0;
+
+
 					
 				}
-				long stop = System.currentTimeMillis();
-				System.err.println("Filter time: " + (stop - start));
+					
+				
+				// long stop = System.currentTimeMillis();
+				// System.err.println("Filter time: " + (stop - start));
 				// System.err.println("filter returned222");
 				// System.err.println("rowsBuffer size is " + rowsBuffer.size());
 				// System.err.println("rowsRemaining is " + this.rowsRemaining);
-				if (this.rowsRemaining == 0) {
-					try {
-						dis.close();
-					} catch (IOException e) {
+				// if (this.rowsRemaining == 0) {
+				// 	try {
+				// 		dis.close();
+				// 	} catch (IOException e) {
 					
-					}
-				}
+				// 	}
+				// }
 				return rowsBuffer;
 			}
 			

@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.FileReader;
 import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
@@ -17,6 +18,8 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
 public class Loader {
 
@@ -156,26 +159,43 @@ public class Loader {
 		// for debugging, to read the data
 		// String fileNameToRead = DatabaseEngine.sortedColumnsMap.get(tableName + "" + tableJoinCol + ".dat");
 
+		// HashSet<Integer> colsToKeepSet = new HashSet<>();
+		// colsToKeepSet.add(1);
+		// colsToKeepSet.add(4);
+
+		// int colsToKeepSize = colsToKeepSet.size();
 
 		// int rowBufferSize = 2;
 		// DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(tableName + ".dat"))); 
-		// int intArrReadIndex = 0;
-		// int intArrIndex = 0;
-		// int[] arrayOfIntegers = new int[1024];
-
+		
 		// ByteBuffer bb = ByteBuffer.allocate(1024 * 8);
 		// bb.flip();
 		
 		// while (numOfRows > 0) {
 		// 	index = 0;	
-			
+		// 	int oldColIndex = 0;
 
-		// 	int[] oldRow = new int[numOfCols];
+		// 	// int[] oldRow = new int[numOfCols];
+		// 	// while (index < numOfCols && bb.hasRemaining() && numOfRows > 0) {
+		// 	// 	int value = bb.getInt();
+		// 	// 	oldRow[index] = value;
+		// 	// 	index = (index + 1) % numOfCols;
+		// 	// 	if (index == 0) {
+		// 	// 		numOfRows--;
+		// 	// 	}
+		// 	// }
+
+		// 	int[] oldRow = new int[colsToKeepSize];
 		// 	while (index < numOfCols && bb.hasRemaining() && numOfRows > 0) {
 		// 		int value = bb.getInt();
-		// 		oldRow[index] = value;
+		// 		if (colsToKeepSet.contains(index)) {
+		// 			oldRow[oldColIndex] = value;
+		// 			oldColIndex++;
+		// 		}
 		// 		index = (index + 1) % numOfCols;
 		// 		if (index == 0) {
+		// 			oldColIndex = 0;
+		// 			print(oldRow);
 		// 			numOfRows--;
 		// 		}
 		// 	}
@@ -189,39 +209,53 @@ public class Loader {
 
 		// 	if (finishRow) {
 		// 		while (index < numOfCols) {
-		// 			oldRow[index] = bb.getInt();
+		// 			int value = bb.getInt();
+		// 			if (colsToKeepSet.contains(index)) {
+		// 				oldRow[oldColIndex] = value;
+		// 				oldColIndex++;
+		// 			}
 		// 			index++;
 		// 		}
+		// 		print(oldRow);
 		// 		numOfRows--;
 		// 	}
 			
 
+		// RandomAccessFile raf = new RandomAccessFile(new File(tableName + ".dat"), "r");
+		// //Get file channel in read-only mode
+		// FileChannel fileChannel = raf.getChannel();
+             
+		// //Get direct byte buffer access using channel.map() operation
+		// MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+
+		// while (buffer.hasRemaining()) {
+		// 	for (int i = 0; i < numOfCols; i++) {
+		// 		System.out.print(buffer.getInt() + " ");
+		// 	}
+		// 	System.out.println();
+		// }
+
+
+		// System.exit(0);
 
 
 
 
 
+			// byte[] buffer = new byte[1024 * 4];
 
+			// int bytesRead = dis.read(buffer, 0, 4 * numOfCols * rowBufferSize);
 
+			// // for each integer, put it in the intbuffer
+			// for (int j = 0; j < bytesRead / 4; j += numOfCols) {
+			// 	for (int i = 0; i < numOfCols; i++) {
+			// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + 4 * j, 4 * i + 4 + 4 * j);
+			// 		int value = fromByteArray(newByteArr);
+			// 		arrayOfIntegers[intArrIndex] = value;
+			// 		intArrIndex = (intArrIndex + 1) % arrayOfIntegers.length;
+			// 	}
 
-
-
-
-
-		// 	// byte[] buffer = new byte[1024 * 4];
-
-		// 	// int bytesRead = dis.read(buffer, 0, 4 * numOfCols * rowBufferSize);
-
-		// 	// // for each integer, put it in the intbuffer
-		// 	// for (int j = 0; j < bytesRead / 4; j += numOfCols) {
-		// 	// 	for (int i = 0; i < numOfCols; i++) {
-		// 	// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + 4 * j, 4 * i + 4 + 4 * j);
-		// 	// 		int value = fromByteArray(newByteArr);
-		// 	// 		arrayOfIntegers[intArrIndex] = value;
-		// 	// 		intArrIndex = (intArrIndex + 1) % arrayOfIntegers.length;
-		// 	// 	}
-
-		// 	// }
+			// }
 		// }
 		// System.exit(0);
 		// for (int i = 0; i < 2; i++) {

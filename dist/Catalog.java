@@ -1,16 +1,28 @@
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
 public class Catalog {
-	
+
     private static HashMap<String, TableMetaData> metaDataMap = new HashMap<>();
-    
+
     public static DataInputStream openStream(String tableName) throws FileNotFoundException {
-    	return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName), 4 * 1024));
+        return new DataInputStream(new BufferedInputStream(new FileInputStream(tableName), 4 * 1024));
+    }
+
+    public static MappedByteBuffer openChannel(String tableName) throws IOException {
+        RandomAccessFile raf = new RandomAccessFile(new File(tableName), "r");
+		//Get file channel in read-only mode
+        FileChannel fileChannel = raf.getChannel();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
     }
     
     public static boolean containsTable(String tableName) {

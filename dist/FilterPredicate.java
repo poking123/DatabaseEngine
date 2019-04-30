@@ -33,23 +33,23 @@ public class FilterPredicate extends Predicate {
 	
 	public boolean test(int[] row) {
 		for (int[] predData : predicates) {
-			int column = predData[0];
-			int operator = predData[1];
-			int compareValue = predData[2];
+			// int column = predData[0];
+			// int operator = predData[1];
+			// int compareValue = predData[2];
 			
-			int rowValue = row[column];
+			// int rowValue = row[column];
 			
-			switch (operator) {
+			switch (predData[1]) {
 				case 0: // equals
-					if (rowValue != compareValue) return false;
+					if (row[predData[0]] != predData[2]) return false;
 					break;
 				
 				case 1: // <
-					if (rowValue >= compareValue) return false;
+					if (row[predData[0]] >= predData[2]) return false;
 					break;
 					
 				case 2: // >
-					if (rowValue <= compareValue) return false;
+					if (row[predData[0]] <= predData[2]) return false;
 					break;
 			}
 		}

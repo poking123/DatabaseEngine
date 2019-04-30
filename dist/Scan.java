@@ -3,6 +3,7 @@ import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -35,22 +36,30 @@ public class Scan extends RAOperation {
 	
 	@Override
 	public Iterator<Queue<int[]>> iterator() {
-		try {
-			return new ScanIterator(list, tableName);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return null;
-		}
+		return new ScanIterator(list, tableName);
+
+		// try {
+		// 	return new ScanIterator(list, tableName);
+		// } catch (FileNotFoundException e) {
+		// 	e.printStackTrace();
+		// 	return null;
+		// }
 	}
 	
 	public class ScanIterator implements Iterator<Queue<int[]>> {		
-			private final DataInputStream dis;
+			// private final DataInputStream dis;
+			private MappedByteBuffer mbb;
 			private final int numCols;
 			private int rowsRemaining;
 			private ByteBuffer bb;
 			
-			public ScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName) throws FileNotFoundException {
-				this.dis = Catalog.openStream(tableName);
+			public ScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName) {
+				// this.dis = Catalog.openStream(tableName);
+				try {
+					this.mbb = Catalog.openChannel(tableName);
+				} catch (IOException e) {
+					
+				}
 				this.numCols = Catalog.getColumns(tableName);
 				this.rowsRemaining = Catalog.getRows(tableName);
 				this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
@@ -85,71 +94,66 @@ public class Scan extends RAOperation {
 			public Queue<int[]> next() {
 				Queue<int[]> rowsBuffer = new LinkedList<int[]>();
 				// int rowBufferSize = DatabaseEngine.scanBufferSize;
-				long start = System.currentTimeMillis();
+				// long start = System.currentTimeMillis();
 
-				try {
-					while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
+				
+				while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0) {
 
-						int index = 0;
+					// int index = 0;
 
-						int[] oldRow = new int[this.numCols];
-						while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
-							int value = bb.getInt();
-							oldRow[index] = value;
-							index = (index + 1) % this.numCols;
-							if (index == 0) {
-								rowsBuffer.add(Arrays.copyOf(oldRow, oldRow.length));
-								rowsRemaining--;
-							}
-						}
-
-
-						boolean finishRow = (index != 0);
-
-						byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
-						dis.read(buffer);
-						bb = ByteBuffer.wrap(buffer);
-
-						if (finishRow) {
-							while (index < this.numCols) {
-								oldRow[index] = bb.getInt();
-								index++;
-							}
-							rowsBuffer.add(Arrays.copyOf(oldRow, oldRow.length));
-							rowsRemaining--;
-						}
+					// int[] oldRow = new int[this.numCols];
+					// while (index < this.numCols && bb.hasRemaining() && rowsRemaining > 0) {
+					// 	int value = bb.getInt();
+					// 	oldRow[index] = value;
+					// 	index = (index + 1) % this.numCols;
+					// 	if (index == 0) {
+					// 		rowsBuffer.add(Arrays.copyOf(oldRow, oldRow.length));
+					// 		rowsRemaining--;
+					// 	}
+					// }
 
 
+					// boolean finishRow = (index != 0);
 
-						// byte[] buffer = new byte[4 * numCols * rowBufferSize];
+					// byte[] buffer = new byte[DatabaseEngine.dataInputBufferSize];
+					// dis.read(buffer);
+					// bb = MappedByteBuffer.wrap(buffer);
 
-						// int bytesRead = dis.read(buffer, 0, 4 * numCols * rowBufferSize);
-						// for (int j = 0; j < bytesRead / 4; j += this.numCols) {
-						// 	int[] row = new int[numCols];
-						// 	for (int i = 0; i < numCols; i++) {
-						// 		byte[] newByteArr = Arrays.copyOfRange(buffer, 4 * i + j * 4, 4 * i + 4 + j * 4);
-						// 		int value = byteArrayToInt(newByteArr);
-						// 		row[i] = value;
-						// 	}
+					// if (finishRow) {
+					// 	while (index < this.numCols) {
+					// 		oldRow[index] = bb.getInt();
+					// 		index++;
+					// 	}
+					// 	rowsBuffer.add(Arrays.copyOf(oldRow, oldRow.length));
+					// 	rowsRemaining--;
+					// }
+					//////////////////////////////////////
 
-						// 	rowsBuffer.add(Arrays.copyOf(row, row.length));
-						// 	rowsRemaining--;
-						// }
-						
-					}
 					
-				} catch (IOException e) { // Done reading the table
+					int index = 0;
+					int[] newRow = new int[this.numCols];
+					while (index < this.numCols) {
+						int value = mbb.getInt();
+						newRow[index] = value;
+						index++;
+					}
+					rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					rowsRemaining--;
+					index = 0;
+					
 					
 				}
-				long stop = System.currentTimeMillis();
-				System.err.println("Scan time " + (stop - start));
-				if (this.rowsRemaining == 0) {
-					try {
-						dis.close();
-					} catch (IOException e) {
 					
-					}
-				}
+				
+				// long stop = System.currentTimeMillis();
+				// System.err.println("Scan time " + (stop - start));
+				// if (this.rowsRemaining == 0) {
+				// 	try {
+				// 		dis.close();
+				// 	} catch (IOException e) {
+					
+				// 	}
+				// }
 				
 				return rowsBuffer;
 			}

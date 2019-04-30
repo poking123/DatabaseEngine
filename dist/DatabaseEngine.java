@@ -5,10 +5,10 @@ import java.util.Scanner;
 
 public class DatabaseEngine {
 	
-	static final int bufferSize = 1000000;
+	static final int bufferSize = 1200000;
 	static int tempNumber = 0;
-	static int byteBufferSize = 1024 * 9;
-	static int dataInputBufferSize = 1024 * 8;
+	static int byteBufferSize = 1024 * 2;
+	static int dataInputBufferSize = 1024 * 1;
 	// static final int scanBufferSize = 1024;
 
 	// static HashMap<String, String> sortedColumnsMap = new HashMap<>();
@@ -16,6 +16,7 @@ public class DatabaseEngine {
 	// static int finalNumber = 0;
 
 	public static void main(String[] args) throws IOException {
+		
 		// long totalStart = System.currentTimeMillis();
 
 		// Make Empty Scan
@@ -51,6 +52,7 @@ public class DatabaseEngine {
 		
 		// long start = System.currentTimeMillis();
 		// Loader loads all the data into storage
+		
 		loader.readAllCSVFiles(CSVFiles);
 		// long stop = System.currentTimeMillis();
 		// System.err.println("Loading Time : " + (stop - start));
