@@ -2,8 +2,8 @@ while (rowsBuffer.size() < DatabaseEngine.bufferSize && rowsRemaining > 0)
 	int index = 0
 	while (ByteBuffer.hasRemaining())
 		int[] oldRow = new int[numCols];
-		while (index < newRow.length && !ByteBuffer.hasRemaining())
-			newRow[index] = ByteBuffer.getInt()
+		while (index < oldRow.length && ByteBuffer.hasRemaining())
+			oldRow[index] = ByteBuffer.getInt()
 			index = (index + 1) % numCols
 			if (index == 0) 
 				int[] newRow = new int[colsToKeep.length]

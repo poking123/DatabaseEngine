@@ -18,6 +18,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.IntBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -219,9 +220,8 @@ public class Loader {
 		// 		print(oldRow);
 		// 		numOfRows--;
 		// 	}
-			
 
-		// RandomAccessFile raf = new RandomAccessFile(new File(tableName + ".dat"), "r");
+		// RandomAccessFile raf = new RandomAccessFile(new File(tableName + "222.dat"), "r");
 		// //Get file channel in read-only mode
 		// FileChannel fileChannel = raf.getChannel();
              

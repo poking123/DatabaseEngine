@@ -1,11 +1,9 @@
 
-import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -51,7 +49,7 @@ public class Scan extends RAOperation {
 			private MappedByteBuffer mbb;
 			private final int numCols;
 			private int rowsRemaining;
-			private ByteBuffer bb;
+			// private ByteBuffer bb;
 			
 			public ScanIterator(Queue<ArrayList<int[]>> rowsBuffer, String tableName) {
 				// this.dis = Catalog.openStream(tableName);
@@ -62,8 +60,8 @@ public class Scan extends RAOperation {
 				}
 				this.numCols = Catalog.getColumns(tableName);
 				this.rowsRemaining = Catalog.getRows(tableName);
-				this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
-				this.bb.flip();
+				// this.bb = ByteBuffer.allocate(DatabaseEngine.byteBufferSize);
+				// this.bb.flip();
 			}
 			
 			@Override
@@ -81,14 +79,6 @@ public class Scan extends RAOperation {
 
 				return false;
 			}
-
-			public int fromByteArray(byte[] bytes) {
-				return ByteBuffer.wrap(bytes).getInt();
-		   }
-
-		   public int byteArrayToInt(byte[] b) {
-			  	return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8 | (b[3] & 0xff);
-		   }
 	
 			@Override
 			public Queue<int[]> next() {
@@ -137,11 +127,10 @@ public class Scan extends RAOperation {
 						newRow[index] = value;
 						index++;
 					}
-					rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					// rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					rowsBuffer.add(newRow);
 					rowsRemaining--;
 					index = 0;
-					
-					
 				}
 					
 				

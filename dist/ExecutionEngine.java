@@ -1,8 +1,8 @@
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.IntBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
@@ -61,7 +61,10 @@ public class ExecutionEngine {
 							if (switchQueue.remove()) {
 								int tempNumber = DatabaseEngine.tempNumber;
 								DatabaseEngine.tempNumber++;
-								DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+								// DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+								FileChannel fc = new RandomAccessFile(tempNumber + ".dat", "rw").getChannel();
+								IntBuffer ib = fc.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE).asIntBuffer();
+
 								int numOfCols = -1;
 								int numOfRows = 0;
 
@@ -72,12 +75,14 @@ public class ExecutionEngine {
 										int[] table1Row = table1Rows.remove();
 										numOfCols = table1Row.length;
 										for (int i = 0; i < table1Row.length; i++) {
-											dos.writeInt(table1Row[i]);
+											// dos.writeInt(table1Row[i]);
+											ib.put(table1Row[i]);
 										}
 										numOfRows++;
 									}
 								}
-								dos.close();
+								// dos.close();
+								fc.close();
 
 								TableMetaData tmd = new TableMetaData("");
 								tmd.setColumns(numOfCols);
@@ -92,7 +97,10 @@ public class ExecutionEngine {
 							if (switchQueue.remove()) {
 								int tempNumber = DatabaseEngine.tempNumber;
 								DatabaseEngine.tempNumber++;
-								DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+								// DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tempNumber + ".dat")));
+								FileChannel fc = new RandomAccessFile(tempNumber + ".dat", "rw").getChannel();
+								IntBuffer ib = fc.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE).asIntBuffer();
+								
 								int numOfCols = -1;
 								int numOfRows = 0;
 
@@ -104,12 +112,14 @@ public class ExecutionEngine {
 										int[] table1Row = table1Rows.remove();
 										numOfCols = table1Row.length;
 										for (int i = 0; i < table1Row.length; i++) {
-											dos.writeInt(table1Row[i]);
+											// dos.writeInt(table1Row[i]);
+											ib.put(table1Row[i]);
 										}
 										numOfRows++;
 									}
 								}
-								dos.close();
+								fc.close();
+								// dos.close();
 
 								TableMetaData tmd = new TableMetaData("");
 								tmd.setColumns(numOfCols);

@@ -1,5 +1,4 @@
 import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -765,8 +764,6 @@ public class MergeJoin extends RAOperation {
 		public void mergeFiles(String table1, String table2, int table) throws IOException {
 			int tableCols = (table == 1) ? this.table1Cols : this.table2Cols;
 			int tableJoinCol = (table == 1) ? this.table1JoinCol : this.table2JoinCol;
-			// System.out.println("tableCols is " + tableCols);
-			// System.out.println("tableJoinCol is " + tableJoinCol);
 			
 			int tempNumber = DatabaseEngine.tempNumber;
 			DatabaseEngine.tempNumber++;
@@ -774,8 +771,11 @@ public class MergeJoin extends RAOperation {
 			
 			holder2.add(tempNumber + ".dat");
 			
-			DataInputStream dis1 = Catalog.openStream(table1);
-			DataInputStream dis2 = Catalog.openStream(table2);
+			// DataInputStream dis1 = Catalog.openStream(table1);
+			// DataInputStream dis2 = Catalog.openStream(table2);
+
+			MappedByteBuffer dis1 = Catalog.openChannel(table1);
+			MappedByteBuffer dis2 = Catalog.openChannel(table2);
 			
 			// fills the rows for both tables
 			int[] table1TempRow = new int[tableCols];
@@ -787,24 +787,18 @@ public class MergeJoin extends RAOperation {
 			boolean table1Done = false;
 			boolean table2Done = false;
 			while (!table1Done && !table2Done) {
-			//while (dis1.available() != 0 && dis2.available() != 0) {
-				// System.out.println("In merge files loop");
-				// System.out.println(dis1.available());
-				// System.out.println(dis2.available());
-				// System.out.println();
-
 				if (writeTable1) {
 					for (int i = 0; i < tableCols; i++) {
-						int value = dis1.readInt();
-						table1TempRow[i] = value;
+						// int value = dis1.readInt();
+						table1TempRow[i] = dis1.getInt();
 					}
 					writeTable1 = false;
 				}
 				
 				if (writeTable2) {
 					for (int i = 0; i < tableCols; i++) {
-						int value = dis2.readInt();
-						table2TempRow[i] = value;
+						// int value = dis2.readInt();
+						table2TempRow[i] = dis2.getInt();;
 					}
 					writeTable2 = false;
 				}
@@ -826,7 +820,7 @@ public class MergeJoin extends RAOperation {
 					}
 					// System.out.println();
 					writeTable1 = true;
-					if (dis1.available() == 0) table1Done = true;
+					if (!dis1.hasRemaining()) table1Done = true;
 					
 				} else {
 					// System.out.println("Writing table 2");
@@ -836,7 +830,7 @@ public class MergeJoin extends RAOperation {
 					}
 					// System.out.println();
 					writeTable2 = true;
-					if (dis2.available() == 0) table2Done = true;
+					if (!dis2.hasRemaining()) table2Done = true;
 				}
 			}
 			
@@ -848,11 +842,10 @@ public class MergeJoin extends RAOperation {
 				}
 				// System.out.println();
 
-				while (dis2.available() != 0) { // write what's left in dis2
+				while (dis2.hasRemaining()) { // write what's left in dis2
 					for (int i = 0; i < tableCols; i++) {
-						int value = dis2.readInt();
-						// System.out.print(value + " ");
-						tempDOS.writeInt(value);
+						// int value = dis2.readInt();
+						tempDOS.writeInt(dis2.getInt());
 					}
 					// System.out.println();
 				}
@@ -864,11 +857,10 @@ public class MergeJoin extends RAOperation {
 				}
 				// System.out.println();
 
-				while (dis1.available() != 0) { // write what's left in dis1
+				while (dis1.hasRemaining()) { // write what's left in dis1
 					for (int i = 0; i < tableCols; i++) {
-						int value = dis1.readInt();
-						// System.out.print(value + " ");
-						tempDOS.writeInt(value);
+						// int value = dis1.readInt();
+						tempDOS.writeInt(dis1.getInt());
 					}
 					// System.out.println();
 				}
@@ -882,23 +874,6 @@ public class MergeJoin extends RAOperation {
 
 			System.arraycopy(row1, 0, combinedRow, 0, row1.length);
 			System.arraycopy(row2, 0, combinedRow, row1.length, row2.length);
-
-			// int i = 0;
-			// int totalIndex = 0;
-			
-			// while (i < row1.length) {
-			// 	combinedRow[totalIndex] = row1[totalIndex];
-			// 	i++;
-			// 	totalIndex++;
-			// }
-			
-			// i = 0;
-			
-			// while (i < row2.length) {
-			// 	combinedRow[totalIndex] = row2[i];
-			// 	i++;
-			// 	totalIndex++;
-			// }
 			
 			return combinedRow;
 		}

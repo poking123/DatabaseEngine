@@ -2,7 +2,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -67,10 +66,7 @@ public class ProjectScan extends RAOperation {
 			
 			@Override
 			public boolean hasNext() {
-				if (this.rowsRemaining > 0)
-					return true;
-				
-				return false;
+				return (this.rowsRemaining > 0);
 			}
 	
 			@Override
@@ -132,11 +128,11 @@ public class ProjectScan extends RAOperation {
 						}
 						index++;
 					}
-					rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					// rowsBuffer.add(Arrays.copyOf(newRow, newRow.length));
+					rowsBuffer.add(newRow);
 					rowsRemaining--;
 					index = 0;
 					colsToKeepIndex = 0;
-					
 				}
 					
 				

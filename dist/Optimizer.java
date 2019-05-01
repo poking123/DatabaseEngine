@@ -1143,7 +1143,7 @@ public class Optimizer {
 
 				// testing ----------------------
 				// switchTables = false;
-				// doMergeJoin = true;
+				// doMergeJoin = false;
 
 				
 				columnsToKeepSet = new TreeSet<>(tableToColumnsToKeep.get(Character.toUpperCase(table2)));
