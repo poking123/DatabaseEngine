@@ -14,3 +14,5 @@ how optimized the code was.
 
 The important lesson to take away is that reading from disk is very slow compared to other operations, so the speed the program can calculate
 the queries depends largely on minimizing the amount of reads to disk, and minimizing the time it takes to read files on disk.
+
+Note: Actual code is in dist. And the data files were just too big to fit on Github. They can be found (as a download link) in dist/PA3.pdf.
