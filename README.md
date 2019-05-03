@@ -9,7 +9,7 @@ format that the Optimizer can understand. The Optimizer will see what query need
 in the Catalog, to make an estimate for the optimal join order. The Optimizer also passes the query, in a particular join order, to the Execution Engine,
 which will take in that information and run the query.
 
-This assignment was not only about getting the correct answer, but more about how quickly the program can get the correct answer, in other words,
+This assignment was not just about getting the correct answer, but more about how quickly the program can get the correct answer, in other words,
 how optimized the code was.
 
 The important lesson to take away is that reading from disk is very slow compared to other operations, so the speed the program can calculate
