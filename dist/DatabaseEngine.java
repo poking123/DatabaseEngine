@@ -14,7 +14,7 @@ public class DatabaseEngine {
 	// static HashMap<String, String> sortedColumnsMap = new HashMap<>();
 
 	// static int finalNumber = 0;
-	////
+	////////
 	public static void main(String[] args) throws IOException {
 		// Make Empty Scan
 		TableMetaData tmd = new TableMetaData("");
@@ -28,7 +28,7 @@ public class DatabaseEngine {
 		Loader loader = new Loader();
 		
 		Scanner scanner = new Scanner(System.in);
-		////
+		////////
 		
 		// Get the CSV files
 		String CSVFiles = loader.getCSVFiles(scanner);

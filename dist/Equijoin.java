@@ -357,9 +357,9 @@ public class Equijoin extends RAOperation {
 							if (bufferMap.containsKey(value)) {
 								this.table1MatchingRows = new LinkedList<>(bufferMap.get(value));
 								
-
+								if (this.table1MatchingRows.size() > 0) hasRows = true;
 								while (!this.table1MatchingRows.isEmpty()) {
-									hasRows = true;
+									// hasRows = true;
 									int[] newRow = combineRows(table1MatchingRows.remove(), table2Row);
 									for (int i = 0; i < this.colsToSum.length; i++) {
 										int keepIndex = this.colsToSum[i];
