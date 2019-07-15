@@ -1,5 +1,8 @@
 Programming Assignment for the class COSI127B - Database System Management at Brandeis University.
 
+Leaderboard: https://pa3.rmarcus.info/
+Nickname: Jvcki Wai
+
 Given data and a specific subset of possible SQL queries, this program will load in the data and execute the SQL queries.
 
 The Loader will read in the CSV data and parse the integers, saving them as 32-bit integers in a binary file. While the Loader is loading the data,
